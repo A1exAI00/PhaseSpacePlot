@@ -184,7 +184,7 @@ with dpg.window(label='Phase Space Plot', tag="plot_w", pos=(350, 0)):
 
 #########################################################################################
 
-dpg.create_viewport(title='PhaseSpacePlot', width=1000, height=1000)
+dpg.create_viewport(title='PhaseSpacePlot', width=1100, height=750)
 dpg.setup_dearpygui()
 dpg.show_viewport()
 dpg.start_dearpygui()
