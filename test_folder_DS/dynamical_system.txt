@@ -1,0 +1,4 @@
+var hello, world
+par a ,b, c, d
+F[1] = a * hello + b * world
+F[2] = c * hello + d * world
