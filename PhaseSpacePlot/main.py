@@ -15,45 +15,126 @@ from utils.integration import euler_integrate
 #########################################################################################
 
 
-def update_plot():
-    integration_t_start = dpg.get_value('integration_t_start')
-    integration_t_end = dpg.get_value('integration_t_end')
-    integration_t_steps = dpg.get_value('integration_t_steps')
-    dt = (integration_t_end-integration_t_start)/integration_t_steps
-
-    pars = [dpg.get_value(pars_name) for pars_name in pars_names]
-    x_init, y_init = dpg.get_value('init_state')
-
-    sol, t_sol = euler_integrate(ODEs, [x_init, y_init], pars, integration_t_end, dt)
-
-    x_axis_label = dpg.get_value("x_axis_label")
-    y_axis_label = dpg.get_value("y_axis_label")
-
-    x_axis_i = axis_posible_labels.index(x_axis_label)
-    y_axis_i = axis_posible_labels.index(y_axis_label)
-
-    if x_axis_i == len(vars_names):
-        x_axis_data = t_sol
-    else:
-        x_axis_data = [state[x_axis_i] for state in sol]
-
-    if y_axis_i == len(vars_names):
-        y_axis_data = t_sol
-    else:
-        y_axis_data = [state[y_axis_i] for state in sol]
-
-
-    dpg.set_value('main_plot_series', [x_axis_data, y_axis_data])
-    dpg.configure_item('x_axis', label=x_axis_label)
-    dpg.configure_item('y_axis', label=y_axis_label)
-    dpg.set_value('x_axis', x_axis_label)
-    dpg.set_value('y_axis', y_axis_label)
-
 def update_par_steps():
     for (i, pars_name) in enumerate(pars_names):
         new_step = dpg.get_value(pars_name+"_step")
         dpg.configure_item(pars_name, step=new_step)
 
+def callback_axis_label_change():
+    # Update axis labels and consider them to know what to plot
+    x_axis_label = dpg.get_value("x_axis_label")
+    y_axis_label = dpg.get_value("y_axis_label")
+    dpg.configure_item('x_axis', label=x_axis_label)
+    dpg.configure_item('y_axis', label=y_axis_label)
+    x_axis_i = axis_posible_labels.index(x_axis_label)
+    y_axis_i = axis_posible_labels.index(y_axis_label)
+    for SaS in SaSs:
+        curr_sol = SaS.sol
+        curr_t_sol = SaS.t_sol
+        if x_axis_i == len(vars_names):
+            new_x_dragpoint = 0.0
+            x_axis_data = curr_t_sol
+        else:
+            x_axis_data = [state[x_axis_i] for state in curr_sol]
+            new_x_dragpoint = x_axis_data[0]
+
+        if y_axis_i == len(vars_names):
+            new_y_dragpoint = 0.0
+            y_axis_data = curr_t_sol
+        else:
+            y_axis_data = [state[y_axis_i] for state in curr_sol]
+            new_y_dragpoint = y_axis_data[0]
+        dpg.set_value("init_state_"+str(SaS.n), [new_x_dragpoint, new_y_dragpoint])
+        dpg.set_value("plot"+str(SaS.n), [x_axis_data, y_axis_data])
+
+def callback_parameter_change():
+    # Update integration parameters
+    integration_t_start = dpg.get_value('integration_t_start')
+    integration_t_end = dpg.get_value('integration_t_end')
+    integration_t_steps = dpg.get_value('integration_t_steps')
+
+    # Update dynamical system parameters
+    pars = [dpg.get_value(pars_name) for pars_name in pars_names]
+
+    # Get axis labels to know what to plot
+    x_axis_label = dpg.get_value("x_axis_label")
+    y_axis_label = dpg.get_value("y_axis_label")
+    x_axis_i = axis_posible_labels.index(x_axis_label)
+    y_axis_i = axis_posible_labels.index(y_axis_label)
+
+    for SaS in SaSs:
+        SaS.integrate(ODEs, pars, integration_t_start, integration_t_end, integration_t_steps)
+        curr_sol = SaS.sol
+        curr_t_sol = SaS.t_sol
+        if x_axis_i == len(vars_names):
+            x_axis_data = curr_t_sol
+        else:
+            x_axis_data = [state[x_axis_i] for state in curr_sol]
+
+        if y_axis_i == len(vars_names):
+            y_axis_data = curr_t_sol
+        else:
+            y_axis_data = [state[y_axis_i] for state in curr_sol]
+        dpg.set_value("init_state_"+str(SaS.n), [x_axis_data[0], y_axis_data[0]])
+        dpg.set_value("plot"+str(SaS.n), [x_axis_data, y_axis_data])
+
+def callback_init_state_change():
+    for i in range(len(SaSs)):
+        callback_init_state_change_n(i)
+
+def callback_init_state_change_n(n):
+    SaS = SaSs[n]
+    
+    # Get new drag point coordinates
+    new_x_dragpoint, new_y_dragpoint = dpg.get_value("init_state_"+str(n))
+
+    # Get axis labels to know what to plot
+    x_axis_label = dpg.get_value("x_axis_label")
+    y_axis_label = dpg.get_value("y_axis_label")
+    x_axis_i = axis_posible_labels.index(x_axis_label)
+    y_axis_i = axis_posible_labels.index(y_axis_label)
+
+    # Update old initial state
+    if x_axis_i == len(vars_names):
+        dpg.set_value("init_state_"+str(n), [0.0, new_y_dragpoint])
+    else:
+        SaS.init_state[x_axis_i] = new_x_dragpoint
+
+    if y_axis_i == len(vars_names):
+        dpg.set_value("init_state_"+str(n), [new_x_dragpoint, 0.0])
+    else:
+        SaS.init_state[y_axis_i] = new_y_dragpoint
+    
+    # Reintegrate solution
+    pars = [dpg.get_value(pars_name) for pars_name in pars_names]
+    integration_t_start = dpg.get_value('integration_t_start')
+    integration_t_end = dpg.get_value('integration_t_end')
+    integration_t_steps = dpg.get_value('integration_t_steps')
+    SaS.integrate(ODEs, pars, integration_t_start, integration_t_end, integration_t_steps)
+
+    # Update solution plot
+    if x_axis_i == len(vars_names):
+        x_axis_data = SaS.t_sol
+    else:
+        x_axis_data = [state[x_axis_i] for state in SaS.sol]
+
+    if y_axis_i == len(vars_names):
+        y_axis_data = SaS.t_sol
+    else:
+        y_axis_data = [state[y_axis_i] for state in SaS.sol]
+
+    dpg.set_value("plot"+str(n), [x_axis_data, y_axis_data])
+    
+def callback_add_drag_init_state():
+    n_new = len(SaSs)
+    SaSs.append(StateAndSolution(n_new, [0.0 for _ in range(len(vars_names))]))
+    dpg.add_drag_point(label="Init. State "+str(n_new),
+                               tag="init_state_"+str(n_new), 
+                               parent="phase_space_plot",
+                               callback=callback_init_state_change, # TODO callback individual dragpoints
+                               color=[255, 0, 0, 150])
+    dpg.add_line_series([], [], label='PhaseSpacePlot', parent='y_axis', tag="plot"+str(n_new))
+    callback_init_state_change_n(n_new)
 
 #########################################################################################
 #########################################################################################
@@ -74,7 +155,6 @@ ODEs = lambda U, p, t: [eq_obj(*(U+p)) for eq_obj in equations_objs]
 print("Variable names: ", vars_names)
 print("Parameter names: ", pars_names)
 
-# TODO replace because not general
 pars_defaults = [0.0 for _ in pars_names]
 par_step_default = 0.1
 
@@ -85,13 +165,23 @@ integration_par_names = ["integration_t_start",
                         "integration_t_end",
                         "integration_t_steps"]
 integration_par_types = ["float", "float", "int"]
-integration_par_defaults = [0.0, 1.0, 100]
+integration_par_defaults = [0.0, 10.0, 1000]
 
 #########################################################################################
 
+class StateAndSolution():
+    def __init__(self, n, init_state):
+        self.n = n
+        self.init_state = init_state
+        self.sol = None
+        self.t_sol = None
+    
+    def integrate(self, ODEs, pars, t_start, t_end, t_N):
+        sol, t_sol = euler_integrate(ODEs, self.init_state, pars, t_end, (t_end-t_start)/t_N) # TODO change integration algorithm
+        self.sol = sol
+        self.t_sol = t_sol
 
-# TODO add Dynamical System Initial State setup
-# init_states = []
+SaSs = []
 
 #########################################################################################
 
@@ -116,7 +206,7 @@ with dpg.window(label='Dynamical System Parameters', tag="DS_pars_w", pos=(0,0))
             par_obj = dpg.add_input_float(label=par_name, 
                                           default_value=pars_defaults[i], 
                                           tag=par_name, 
-                                          callback=update_plot, 
+                                          callback=callback_parameter_change, 
                                           width=150)
             par_step_obj = dpg.add_input_float(label=par_name+" step", 
                                                default_value=par_step_default, 
@@ -130,44 +220,42 @@ with dpg.window(label='Dynamical System Parameters', tag="DS_pars_w", pos=(0,0))
 #########################################################################################
 
 with dpg.window(label='Integration Parameters', tag="integration_pars_w", pos=(0, 200)):
-    integration_par_dpg_objs = []
     for (i, par_name) in enumerate(integration_par_names):
             if integration_par_types[i] == "float":
-                integration_par_dpg_obj = dpg.add_input_float(label=par_name, 
-                                                              tag=par_name,
-                                                              default_value=integration_par_defaults[i], 
-                                                              width=150) 
+                tmp_add_input = dpg.add_input_float
             elif integration_par_types[i] == "int":
-                integration_par_dpg_obj = dpg.add_input_int(label=par_name, 
-                                                            tag=par_name,
-                                                            default_value=integration_par_defaults[i], 
-                                                            width=150) 
-            else:
-                continue
-            integration_par_dpg_objs.append(integration_par_dpg_obj)
-    _ = [dpg.set_item_callback(par_dpg_obj, update_plot) for par_dpg_obj in integration_par_dpg_objs]
+                tmp_add_input = dpg.add_input_int
+            integration_par_dpg_obj = tmp_add_input(label=par_name, 
+                                               tag=par_name,
+                                               default_value=integration_par_defaults[i], 
+                                               width=150,
+                                               callback=callback_parameter_change)
 
 #########################################################################################
 
 with dpg.window(label='Plot Parameters', tag="plot_pars_w", pos=(0, 400)):
-    plot_par_dpg_objs = []
-    plot_par_dpg_objs.append(dpg.add_combo(label="X Axis Label", 
-                                           tag="x_axis_label",
-                                           default_value=x_axis_label_default, 
-                                           items=axis_posible_labels, 
-                                           callback=update_plot))
-    plot_par_dpg_objs.append(dpg.add_combo(label="Y Axis Label", 
-                                           tag="y_axis_label",
-                                           default_value=y_axis_label_default, 
-                                           items=axis_posible_labels, 
-                                           callback=update_plot))
+    dpg.add_combo(label="X Axis Label", 
+                  tag="x_axis_label",
+                  default_value=x_axis_label_default, 
+                  items=axis_posible_labels, 
+                  callback=callback_parameter_change)
+    dpg.add_combo(label="Y Axis Label", 
+                  tag="y_axis_label",
+                  default_value=y_axis_label_default, 
+                  items=axis_posible_labels, 
+                  callback=callback_parameter_change)
+
+#########################################################################################
+
+with dpg.window(label='Drag Initial States', tag="drag_init_states_w", pos=(0, 600)):
+    dpg.add_button(label="Add Drag Initial State",
+                   tag="add_drag_init_state",
+                   callback=callback_add_drag_init_state)
 
 #########################################################################################
 
 with dpg.window(label='Phase Space Plot', tag="plot_w", pos=(350, 0)):
-    with dpg.plot(label='Series', width=700, height=700):
-
-        # Add axis labels
+    with dpg.plot(label='Phase Space Plot', tag="phase_space_plot", width=700, height=700):
         dpg.add_plot_axis(dpg.mvXAxis, 
                           label=x_axis_label_default, 
                           tag="x_axis")
@@ -175,15 +263,14 @@ with dpg.window(label='Phase Space Plot', tag="plot_w", pos=(350, 0)):
                           label=y_axis_label_default, 
                           tag="y_axis")
 
-        dpg.add_drag_point(label='Init. State', 
-                           tag='init_state', 
-                           callback=update_plot, 
-                           color=[255, 0, 0, 150])
+        for i in range(len(SaSs)):
+            dpg.add_drag_point(label="Init. State "+str(i),
+                               tag="init_state_"+str(i), 
+                               callback=callback_init_state_change, # TODO callback individual dragpoints
+                               color=[255, 0, 0, 150])
+            dpg.add_line_series([], [], label='PhaseSpacePlot', parent='y_axis', tag="plot"+str(i))
 
-        # Add the actual line plot
-        dpg.add_line_series([], [], label='PhaseSpacePlot', parent='y_axis', tag='main_plot_series')
-
-        update_plot()
+        callback_parameter_change()
 
 #########################################################################################
 
