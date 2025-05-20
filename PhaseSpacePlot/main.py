@@ -44,6 +44,10 @@ def update_plot():
 
 
     dpg.set_value('main_plot_series', [x_axis_data, y_axis_data])
+    dpg.configure_item('x_axis', label=x_axis_label)
+    dpg.configure_item('y_axis', label=y_axis_label)
+    dpg.set_value('x_axis', x_axis_label)
+    dpg.set_value('y_axis', y_axis_label)
 
 def update_par_steps():
     for (i, pars_name) in enumerate(pars_names):
@@ -165,13 +169,12 @@ with dpg.window(label='Phase Space Plot', tag="plot_w", pos=(350, 0)):
 
         # Add axis labels
         dpg.add_plot_axis(dpg.mvXAxis, 
-                          label=vars_names[0], 
+                          label=x_axis_label_default, 
                           tag="x_axis")
         dpg.add_plot_axis(dpg.mvYAxis, 
-                          label=vars_names[1], 
+                          label=y_axis_label_default, 
                           tag="y_axis")
 
-        # Add drag point, set callback function
         dpg.add_drag_point(label='Init. State', 
                            tag='init_state', 
                            callback=update_plot, 
