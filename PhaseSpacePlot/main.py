@@ -255,7 +255,7 @@ with dpg.window(label='Drag Initial States', tag="drag_init_states_w", pos=(0, 6
 #########################################################################################
 
 with dpg.window(label='Phase Space Plot', tag="plot_w", pos=(350, 0)):
-    with dpg.plot(label='Phase Space Plot', tag="phase_space_plot", width=700, height=700):
+    with dpg.plot(label='', tag="phase_space_plot", width=700, height=700):
         dpg.add_plot_axis(dpg.mvXAxis, 
                           label=x_axis_label_default, 
                           tag="x_axis")
