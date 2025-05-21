@@ -11,3 +11,15 @@ def euler_integrate(ODEs, U0, p, t, dt):
         t_sol.append(t_sol[-1]+dt)
         curr_t += dt
     return (sol, t_sol)
+
+def scipy_integrate(ODEs, U0, p, t_start, t_end, dt):
+    import numpy as np
+    from scipy.integrate import solve_ivp
+
+    sol = solve_ivp(lambda t, U0: ODEs(U0, np.array(p), t), 
+                    t_span=(t_start, t_end), 
+                    y0=U0, 
+                    t_eval=np.arange(t_start, t_end, dt), 
+                    method="RK45", 
+                    rtol = 1e-5, atol = 1e-5)
+    return (sol.y, sol.t)

@@ -1,5 +1,6 @@
 import os
 import dearpygui.dearpygui as dpg
+import numpy as np
 
 # To convert string with an equation into a callable object
 from Equation import Expression
@@ -8,7 +9,7 @@ from Equation import Expression
 from utils.DS_from_file import load_DS_from_file
 
 # Tmp implementation for DS integration
-from utils.integration import euler_integrate
+from utils.integration import euler_integrate, scipy_integrate
 
 
 #########################################################################################
@@ -28,7 +29,7 @@ class StateAndSolution():
         self.t_sol = None
     
     def integrate(self, ODEs, pars, t_start, t_end, t_N):
-        sol, t_sol = euler_integrate(ODEs, self.init_state, pars, t_end, (t_end-t_start)/t_N) # TODO change integration algorithm
+        sol, t_sol = scipy_integrate(ODEs, self.init_state, pars, t_start, t_end, (t_end-t_start)/t_N) # TODO change integration algorithm
         self.sol = sol
         self.t_sol = t_sol
 
@@ -56,14 +57,14 @@ def callback_axis_label_change():
             new_x_dragpoint = 0.0
             x_axis_data = curr_t_sol
         else:
-            x_axis_data = [state[x_axis_i] for state in curr_sol]
+            x_axis_data = curr_sol[x_axis_i]
             new_x_dragpoint = x_axis_data[0]
 
         if y_axis_i == len(vars_names):
             new_y_dragpoint = 0.0
             y_axis_data = curr_t_sol
         else:
-            y_axis_data = [state[y_axis_i] for state in curr_sol]
+            y_axis_data = curr_sol[y_axis_i]
             new_y_dragpoint = y_axis_data[0]
         dpg.set_value("init_state_"+str(SaS.n), [new_x_dragpoint, new_y_dragpoint])
         dpg.set_value("plot"+str(SaS.n), [x_axis_data, y_axis_data])
@@ -90,12 +91,12 @@ def callback_parameter_change():
         if x_axis_i == len(vars_names):
             x_axis_data = curr_t_sol
         else:
-            x_axis_data = [state[x_axis_i] for state in curr_sol]
+            x_axis_data = curr_sol[x_axis_i]
 
         if y_axis_i == len(vars_names):
             y_axis_data = curr_t_sol
         else:
-            y_axis_data = [state[y_axis_i] for state in curr_sol]
+            y_axis_data = curr_sol[y_axis_i]
         dpg.set_value("init_state_"+str(SaS.n), [x_axis_data[0], y_axis_data[0]])
         dpg.set_value("plot"+str(SaS.n), [x_axis_data, y_axis_data])
 
@@ -137,18 +138,18 @@ def callback_init_state_change_n(n):
     if x_axis_i == len(vars_names):
         x_axis_data = SaS.t_sol
     else:
-        x_axis_data = [state[x_axis_i] for state in SaS.sol]
+        x_axis_data = SaS.sol[x_axis_i]
 
     if y_axis_i == len(vars_names):
         y_axis_data = SaS.t_sol
     else:
-        y_axis_data = [state[y_axis_i] for state in SaS.sol]
+        y_axis_data = SaS.sol[y_axis_i]
 
     dpg.set_value("plot"+str(n), [x_axis_data, y_axis_data])
     
 def callback_add_drag_init_state():
     n_new = len(SaSs)
-    SaSs.append(StateAndSolution(n_new, [0.0 for _ in range(len(vars_names))]))
+    SaSs.append(StateAndSolution(n_new, np.zeros(len(vars_names))))
     dpg.add_drag_point(label="Init. State "+str(n_new),
                        tag="init_state_"+str(n_new), 
                        parent="phase_space_plot",
@@ -167,7 +168,7 @@ def callback_add_DS_folder(sender, app_data):
     # Dynamical System setup
     vars_names, pars_names, equations = load_DS_from_file(DS_filepath)
     equations_objs = [Expression(eq, vars_names+pars_names) for (i,eq) in enumerate(equations)]
-    ODEs = lambda U, p, t: [eq_obj(*(U+p)) for eq_obj in equations_objs]
+    ODEs = lambda U, p, t: [eq_obj(*np.concat((U,p))) for eq_obj in equations_objs]
 
     print("Variable names: ", vars_names)
     print("Parameter names: ", pars_names)
