@@ -23,3 +23,17 @@ def scipy_integrate(ODEs, U0, p, t_start, t_end, dt):
                     method="RK45", 
                     rtol = 1e-5, atol = 1e-5)
     return (sol.y, sol.t)
+
+#########################################################################################
+
+class Trajectory():
+    def __init__(self, n, init_state):
+        self.n = n
+        self.init_state = init_state
+        self.sol = None
+        self.t_sol = None
+    
+    def integrate_scipy(self, ODEs, pars, t_start, t_end, t_N):
+        sol, t_sol = scipy_integrate(ODEs, self.init_state, pars, t_start, t_end, (t_end-t_start)/t_N)
+        self.sol = sol
+        self.t_sol = t_sol
