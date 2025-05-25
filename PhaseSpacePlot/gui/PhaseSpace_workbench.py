@@ -6,6 +6,17 @@ from utils.integration import Trajectory
 
 #########################################################################################
 
+PARAMETER_FORMATING = "%f"
+PARAMETER_STEP_FORMATING = "%.2E"
+PARAMETER_WIDTH = 130
+PARAMETER_STEP_WIDTH = 65
+VARIABLE_FORMATING = "%f"
+VARIABLE_STEP_FORMATING = "%.2E"
+VARIABLE_WIDTH = 130
+VARIABLE_STEP_WIDTH = 65
+
+#########################################################################################
+
 class PhaseSpaceWorkbench:
     def __init__(self, app):
         self.app = app
@@ -18,11 +29,11 @@ class PhaseSpaceWorkbench:
                     dpg.add_input_float(label=par_name, tag=par_name, 
                                         default_value=self.app.parameter_defaults[i], 
                                         callback=self.callback_change_parameter, 
-                                        width=150)
+                                        width=PARAMETER_WIDTH, format=PARAMETER_FORMATING)
                     dpg.add_input_float(label=par_name+" step", tag=par_name+"_step", 
                                         default_value=self.app.parameter_step_defaults[i], 
                                         callback=self.callback_change_parameter_step,
-                                        width=100, step=0.0)
+                                        width=PARAMETER_STEP_WIDTH, step=0.0, format=PARAMETER_STEP_FORMATING)
                 with dpg.popup(parent=par_name):
                         dpg.add_button(label="Copy all parameter values", callback=self.callback_copy_all_parameter_values)
                         dpg.add_button(label="Paste all parameter values", callback=self.callback_paste_all_parameter_values)
@@ -39,46 +50,44 @@ class PhaseSpaceWorkbench:
                         tmp_add_input = dpg.add_input_int
                     tmp_add_input(label=parameter_name, tag=parameter_name,
                                 default_value=self.app.integration_parameter_defaults[i], 
-                                width=150,
+                                width=PARAMETER_WIDTH,
                                 callback=self.callback_change_parameter)
         return
 
     def setup_plot_parameters_window(self):
-        with dpg.window(label='Plot Parameters', tag="plot_parameters_window", pos=(0, 400)):
+        with dpg.window(label='Plot Parameters', tag="plot_parameters_window", pos=(0, 310)):
             dpg.add_combo(label="X Axis Label", tag="x_axis_label",
                         default_value=self.app.x_axis_label_default, 
                         items=self.app.axis_posible_labels, 
                         callback=self.callback_change_axis_label, 
-                        width=100)
+                        width=PARAMETER_WIDTH)
             dpg.add_combo(label="Y Axis Label", tag="y_axis_label",
                         default_value=self.app.y_axis_label_default, 
                         items=self.app.axis_posible_labels, 
                         callback=self.callback_change_axis_label,
-                        width=100)
-            # with dpg.group(horizontal=True):
-            #     dpg.add_input_float(label="X Axis min", tag="x_axis_min", 
-            #                         default_value=-1.0, 
-            #                         callback=self.callback_change_axis_limits, 
-            #                         width=100, step=0.0)
-            #     dpg.add_input_float(label="X Axis max", tag="x_axis_max", 
-            #                         default_value=1.0, 
-            #                         callback=self.callback_change_axis_limits, 
-            #                         width=100, step=0.0)
-            # with dpg.group(horizontal=True):
-            #     dpg.add_input_float(label="Y Axis min", tag="y_axis_min", 
-            #                         default_value=-1.0, 
-            #                         callback=self.callback_change_axis_limits, 
-            #                         width=100, step=0.0)
-            #     dpg.add_input_float(label="Y Axis max", tag="y_axis_max", 
-            #                         default_value=1.0, 
-            #                         callback=self.callback_change_axis_limits, 
-            #                         width=100, step=0.0)
+                        width=PARAMETER_WIDTH)
         return
 
     def setup_dragpoint_init_state_window(self):
-        with dpg.window(label='Drag Initial States', tag="dragpoint_init_state_window", pos=(0, 600)):
+        with dpg.window(label='Drag Initial States', tag="dragpoint_init_state_window", pos=(0, 420), height=400):
             dpg.add_button(label="Add Dragpoint Initial State",tag="add_dragpoint_init_state",
                         callback=self.callbcak_add_dragpoint)
+        
+            dpg.add_separator()
+            for (n, trajectory) in self.app.trajectories.items():
+                dpg.add_text(f"Initial state #{n}")
+                with dpg.group(label="Init. State "+str(n)):
+                    for (i,variable_name) in enumerate(self.app.variable_names):
+                        with dpg.group(horizontal=True, label=f"{n}"):
+                            dpg.add_input_float(label=variable_name, tag=variable_name+f"_{n}", 
+                                                default_value=trajectory.init_state[i], 
+                                                callback=self.callback_change_variable, 
+                                                width=VARIABLE_WIDTH, format=VARIABLE_FORMATING)
+                            dpg.add_input_float(label=variable_name+" step", tag=variable_name+f"_step_{n}", 
+                                                default_value=0.1, 
+                                                callback=self.callback_change_variable_step, 
+                                                width=VARIABLE_STEP_WIDTH, step=0.0, format=VARIABLE_STEP_FORMATING)
+                dpg.add_separator()
         return
 
     def setup_phase_space_plot_window(self):
@@ -144,6 +153,60 @@ class PhaseSpaceWorkbench:
             new_step = dpg.get_value(parameter_name+"_step")
             dpg.configure_item(parameter_name, step=new_step)
         return
+    
+    def callback_change_variable(self, sender, app_data):
+        varable_name = dpg.get_item_label(sender)
+        n = int(dpg.get_item_label(dpg.get_item_parent(sender)))
+        trajectory = self.app.trajectories[n]
+
+        # Change corresponding init state
+        i = self.app.variable_names.index(varable_name)
+        trajectory.init_state[i] = dpg.get_value(sender)
+
+        # Reintegrate from corresponding init state
+        pars = [dpg.get_value(pars_name) for pars_name in self.app.parameter_names]
+        integration_t_start = dpg.get_value('integration_t_start')
+        integration_t_end = dpg.get_value('integration_t_end')
+        integration_t_steps = dpg.get_value('integration_t_steps')
+        trajectory.integrate_scipy(self.app.ODEs, pars, integration_t_start, integration_t_end, integration_t_steps)
+
+        # Get axis labels to know what to plot
+        x_axis_label = dpg.get_value("x_axis_label")
+        y_axis_label = dpg.get_value("y_axis_label")
+        x_axis_i = self.app.axis_posible_labels.index(x_axis_label)
+        y_axis_i = self.app.axis_posible_labels.index(y_axis_label)
+
+        # Redraw the trajectory
+        if x_axis_i == len(self.app.variable_names):
+            x_axis_data = trajectory.t_sol
+        else:
+            x_axis_data = trajectory.sol[x_axis_i]
+
+        if y_axis_i == len(self.app.variable_names):
+            y_axis_data = trajectory.t_sol
+        else:
+            y_axis_data = trajectory.sol[y_axis_i]
+        dpg.set_value("plot"+str(n), [x_axis_data, y_axis_data])
+        
+        # Change corresponding dragpoint position
+        if x_axis_i == len(self.app.variable_names):
+            new_x_dragpoint = 0.0
+        else:
+            new_x_dragpoint = trajectory.sol[x_axis_i][0]
+
+        if y_axis_i == len(self.app.variable_names):
+            new_y_dragpoint = 0.0
+        else:
+            new_y_dragpoint = trajectory.sol[y_axis_i][0]
+        dpg.set_value("init_state_"+str(n), [new_x_dragpoint, new_y_dragpoint])
+        return
+
+    def callback_change_variable_step(self, sender, app_data):
+        for (n, trajectory) in self.app.trajectories.items():
+            for (i, variable_name) in enumerate(self.app.variable_names):
+                new_step = dpg.get_value(variable_name+f"_step_{n}")
+                dpg.configure_item(variable_name+f"_{n}", step=new_step)
+        return
 
     def callback_change_axis_label(self, sender, app_data):
         # Update axis labels and consider them to know what to plot
@@ -153,7 +216,7 @@ class PhaseSpaceWorkbench:
         dpg.configure_item('y_axis', label=y_axis_label)
         x_axis_i = self.app.axis_posible_labels.index(x_axis_label)
         y_axis_i = self.app.axis_posible_labels.index(y_axis_label)
-        for trajectory in self.app.trajectories.values():
+        for (n,trajectory) in self.app.trajectories.items():
             curr_sol = trajectory.sol
             curr_t_sol = trajectory.t_sol
             if x_axis_i == len(self.app.variable_names):
@@ -169,8 +232,8 @@ class PhaseSpaceWorkbench:
             else:
                 y_axis_data = curr_sol[y_axis_i]
                 new_y_dragpoint = y_axis_data[0]
-            dpg.set_value("init_state_"+str(trajectory.n), [new_x_dragpoint, new_y_dragpoint])
-            dpg.set_value("plot"+str(trajectory.n), [x_axis_data, y_axis_data])
+            dpg.set_value("init_state_"+str(n), [new_x_dragpoint, new_y_dragpoint])
+            dpg.set_value("plot"+str(n), [x_axis_data, y_axis_data])
         return 
 
     def callback_change_axis_limits(self, sender, app_data):
@@ -214,6 +277,22 @@ class PhaseSpaceWorkbench:
         n_new = max(self.app.trajectories.keys())+1
         trajectory_new = Trajectory(np.zeros(len(self.app.variable_names)))
         self.app.trajectories[n_new] = trajectory_new
+
+        # Add new entry in GUI
+        dpg.add_text(f"Initial state #{n_new}", parent="dragpoint_init_state_window")
+        for (i,variable_name) in enumerate(self.app.variable_names):
+            with dpg.group(horizontal=True, label=f"{n_new}", parent="dragpoint_init_state_window"):
+                dpg.add_input_float(label=variable_name, tag=variable_name+f"_{n_new}", 
+                                    default_value=trajectory_new.init_state[i], 
+                                    callback=self.callback_change_variable, 
+                                    width=VARIABLE_WIDTH, format=VARIABLE_FORMATING)
+                dpg.add_input_float(label=variable_name+" step", tag=variable_name+f"_step_{n_new}", 
+                                    default_value=0.1, 
+                                    callback=self.callback_change_variable_step, 
+                                    width=VARIABLE_STEP_WIDTH, step=0.0, format=VARIABLE_STEP_FORMATING)
+        dpg.add_separator(parent="dragpoint_init_state_window")
+        
+        # Add new dragpoint
         dpg.add_drag_point(label="Init. State "+str(n_new),
                         tag="init_state_"+str(n_new), 
                         parent="phase_space_plot",
@@ -244,6 +323,10 @@ class PhaseSpaceWorkbench:
             dpg.set_value("init_state_"+str(n), [new_x_dragpoint, 0.0])
         else:
             trajectory.init_state[y_axis_i] = new_y_dragpoint
+        
+        # Update init state in GUI
+        for (i, variable_name) in enumerate(self.app.variable_names):
+            dpg.set_value(variable_name+f"_{n}", trajectory.init_state[i])
         
         # Reintegrate solution
         pars = [dpg.get_value(pars_name) for pars_name in self.app.parameter_names]
