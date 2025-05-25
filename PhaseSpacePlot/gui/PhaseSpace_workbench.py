@@ -1,5 +1,6 @@
 import numpy as np
 import dearpygui.dearpygui as dpg
+import clipboard as clip
 
 from utils.integration import Trajectory
 
@@ -22,6 +23,10 @@ class PhaseSpaceWorkbench:
                                         default_value=self.app.parameter_step_defaults[i], 
                                         callback=self.callback_change_parameter_step,
                                         width=100, step=0.0)
+                with dpg.popup(parent=par_name):
+                        dpg.add_button(label="Copy all parameter values", callback=self.callback_copy_all_parameter_values)
+                        dpg.add_button(label="Paste all parameter values", callback=self.callback_paste_all_parameter_values)
+                        dpg.add_button(label="Copy value: "+par_name, callback=self.callback_copy_parameter_value)
         return
 
     def setup_integration_parameters_window(self):
@@ -91,11 +96,6 @@ class PhaseSpaceWorkbench:
                     dpg.add_line_series([], [], label="", parent='y_axis', tag="plot"+str(n))
 
         self.callback_change_parameter(None, None)
-        # self.callback_change_axis_limits(None, None)
-        dpg.set_axis_limits("x_axis", -1.0, 1.0)
-        dpg.set_axis_limits("y_axis", -1.0, 1.0)
-        dpg.set_axis_limits_auto("x_axis")
-        dpg.set_axis_limits_auto("y_axis")
         return
     
     def setup_all(self):
@@ -180,6 +180,34 @@ class PhaseSpaceWorkbench:
         y_axis_max = dpg.get_value("y_axis_max")
         dpg.set_axis_limits("x_axis", x_axis_min, x_axis_max)
         dpg.set_axis_limits("y_axis", y_axis_min, y_axis_max)
+        return
+    
+    def callback_copy_all_parameter_values(self, sender, app_data):
+        result = ""
+        for (i, parameter_name) in enumerate(self.app.parameter_names):
+            result += parameter_name + " = " + str(dpg.get_value(parameter_name)) + ", "
+        clip.copy(result[:-2])
+        return
+    
+    def callback_paste_all_parameter_values(self, sender, app_data):
+        parameter_values_str = clip.paste()
+        separater_charecters = [",", ";"]
+        for sep in separater_charecters:
+            if sep not in parameter_values_str:
+                continue
+            parameter_values_split = parameter_values_str.split(sep)
+            for split in parameter_values_split:
+                parameter_name = split[:split.find("=")].replace(" ", "")
+                parameter_value = split[split.find("=")+1:].replace(" ", "")
+                dpg.set_value(parameter_name, float(parameter_value))
+        self.callback_change_parameter(None, None)
+        return
+    
+    def callback_copy_parameter_value(self, sender, app_data):
+        sender_label = dpg.get_item_label(sender)
+        parameter_name = sender_label[sender_label.find(":")+1:].replace(" ", "")
+        parameter_value = dpg.get_value(parameter_name)
+        clip.copy(parameter_value)
         return
 
     def callbcak_add_dragpoint(self, sender, app_data):
