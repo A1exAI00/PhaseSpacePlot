@@ -25,7 +25,7 @@ class PhaseSpaceWorkbench:
     def setup_dynamical_system_parameters_window(self):
         with dpg.window(label='Dynamical System Parameters', tag="dynamical_system_parameters_window", pos=(0,0)):
             for (i, par_name) in enumerate(self.app.parameter_names):
-                with dpg.group(horizontal=True):
+                with dpg.group(horizontal=True) as group:
                     dpg.add_input_float(label=par_name, tag=par_name, 
                                         default_value=self.app.parameter_defaults[i], 
                                         callback=self.callback_change_parameter, 
@@ -34,10 +34,12 @@ class PhaseSpaceWorkbench:
                                         default_value=self.app.parameter_step_defaults[i], 
                                         callback=self.callback_change_parameter_step,
                                         width=PARAMETER_STEP_WIDTH, step=0.0, format=PARAMETER_STEP_FORMATING)
-                with dpg.popup(parent=par_name):
-                        dpg.add_button(label="Copy all parameter values", callback=self.callback_copy_all_parameter_values)
-                        dpg.add_button(label="Paste all parameter values", callback=self.callback_paste_all_parameter_values)
-                        dpg.add_button(label="Copy value: "+par_name, callback=self.callback_copy_parameter_value)
+                    with dpg.popup(parent=group, no_move=True):
+                        with dpg.group(label=par_name):
+                            dpg.add_button(label="Copy parameter value", callback=self.callback_copy_parameter_value)
+                            dpg.add_button(label="Copy parameter name=value", callback=self.callback_copy_parameter_value_w_name)
+                            dpg.add_button(label="Copy all parameter values", callback=self.callback_copy_all_parameter_values)
+                            dpg.add_button(label="Paste all parameter values", callback=self.callback_paste_all_parameter_values)
         return
 
     def setup_integration_parameters_window(self):
@@ -246,6 +248,7 @@ class PhaseSpaceWorkbench:
         return
     
     def callback_copy_all_parameter_values(self, sender, app_data):
+        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
         result = ""
         for (i, parameter_name) in enumerate(self.app.parameter_names):
             result += parameter_name + " = " + str(dpg.get_value(parameter_name)) + ", "
@@ -253,6 +256,7 @@ class PhaseSpaceWorkbench:
         return
     
     def callback_paste_all_parameter_values(self, sender, app_data):
+        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
         parameter_values_str = clip.paste()
         separater_charecters = [",", ";"]
         for sep in separater_charecters:
@@ -267,10 +271,19 @@ class PhaseSpaceWorkbench:
         return
     
     def callback_copy_parameter_value(self, sender, app_data):
-        sender_label = dpg.get_item_label(sender)
-        parameter_name = sender_label[sender_label.find(":")+1:].replace(" ", "")
+        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
+        sender_parent_label = dpg.get_item_label(dpg.get_item_parent(sender))
+        parameter_name = sender_parent_label
         parameter_value = dpg.get_value(parameter_name)
         clip.copy(parameter_value)
+        return
+    
+    def callback_copy_parameter_value_w_name(self, sender, app_data):
+        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
+        sender_parent_label = dpg.get_item_label(dpg.get_item_parent(sender))
+        parameter_name = sender_parent_label
+        parameter_value = dpg.get_value(parameter_name)
+        clip.copy(parameter_name+"="+str(parameter_value))
         return
 
     def callbcak_add_dragpoint(self, sender, app_data):
