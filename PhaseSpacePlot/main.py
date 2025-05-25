@@ -6,6 +6,7 @@ from App import App
 from utils.DS_from_file import load_DS_from_file
 from Equation import Expression
 from gui.PhaseSpace_workbench import PhaseSpaceWorkbench as psw
+from utils.integration import Trajectory
 
 
 #########################################################################################
@@ -33,7 +34,8 @@ def callback_DS_folder_chooser(app, sender, app_data):
     equations_objs = [Expression(eq, app.variable_names+app.parameter_names) for (i,eq) in enumerate(equations)]
     app.ODEs = lambda U, p, t: [eq_obj(*np.concat((U,p))) for eq_obj in equations_objs]
 
-    app.trajectories = []
+    app.trajectories = {}
+    app.trajectories[0] = Trajectory(np.zeros(len(variable_names)))
     app.init_other_variables()
     app.print_interesting()
     the_psw.setup_all()

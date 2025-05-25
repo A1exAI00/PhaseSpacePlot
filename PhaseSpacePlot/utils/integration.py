@@ -27,8 +27,7 @@ def scipy_integrate(ODEs, U0, p, t_start, t_end, dt):
 #########################################################################################
 
 class Trajectory():
-    def __init__(self, n, init_state):
-        self.n = n
+    def __init__(self, init_state):
         self.init_state = init_state
         self.sol = None
         self.t_sol = None

@@ -89,7 +89,7 @@ class PhaseSpaceWorkbench:
                 dpg.add_plot_axis(dpg.mvYAxis, 
                                 label=self.app.y_axis_label_default, tag="y_axis")
 
-                for (n,trajectory) in enumerate(self.app.trajectories):
+                for (n,trajectory) in self.app.trajectories.items():
                     dpg.add_drag_point(label="Init. State "+str(n), tag="init_state_"+str(n), 
                                     callback=self.callback_change_dragpoint_position, # TODO callback individual dragpoints
                                     color=[255, 0, 0, 150])
@@ -121,7 +121,7 @@ class PhaseSpaceWorkbench:
         x_axis_i = self.app.axis_posible_labels.index(x_axis_label)
         y_axis_i = self.app.axis_posible_labels.index(y_axis_label)
 
-        for trajectory in self.app.trajectories:
+        for (n, trajectory) in self.app.trajectories.items():
             # Reintegrate with new parameters
             trajectory.integrate_scipy(self.app.ODEs, pars, integration_t_start, integration_t_end, integration_t_steps)
             curr_sol = trajectory.sol
@@ -135,8 +135,8 @@ class PhaseSpaceWorkbench:
                 y_axis_data = curr_t_sol
             else:
                 y_axis_data = curr_sol[y_axis_i]
-            dpg.set_value("init_state_"+str(trajectory.n), [x_axis_data[0], y_axis_data[0]])
-            dpg.set_value("plot"+str(trajectory.n), [x_axis_data, y_axis_data])
+            dpg.set_value("init_state_"+str(n), [x_axis_data[0], y_axis_data[0]])
+            dpg.set_value("plot"+str(n), [x_axis_data, y_axis_data])
         return
 
     def callback_change_parameter_step(self, sender, app_data):
@@ -153,7 +153,7 @@ class PhaseSpaceWorkbench:
         dpg.configure_item('y_axis', label=y_axis_label)
         x_axis_i = self.app.axis_posible_labels.index(x_axis_label)
         y_axis_i = self.app.axis_posible_labels.index(y_axis_label)
-        for trajectory in self.app.trajectories:
+        for trajectory in self.app.trajectories.values():
             curr_sol = trajectory.sol
             curr_t_sol = trajectory.t_sol
             if x_axis_i == len(self.app.variable_names):
@@ -211,9 +211,9 @@ class PhaseSpaceWorkbench:
         return
 
     def callbcak_add_dragpoint(self, sender, app_data):
-        n_new = len(self.app.trajectories)
-        trajectory_new = Trajectory(n_new, np.zeros(len(self.app.variable_names)))
-        self.app.trajectories.append(trajectory_new)
+        n_new = max(self.app.trajectories.keys())+1
+        trajectory_new = Trajectory(np.zeros(len(self.app.variable_names)))
+        self.app.trajectories[n_new] = trajectory_new
         dpg.add_drag_point(label="Init. State "+str(n_new),
                         tag="init_state_"+str(n_new), 
                         parent="phase_space_plot",
