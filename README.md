@@ -1,5 +1,7 @@
 # PhaseSpacePlot
 
+![screenshot](screenshot.png)
+
 ## How to setup
 
 ```bash
