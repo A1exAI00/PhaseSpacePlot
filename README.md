@@ -5,7 +5,7 @@
 ```bash
 > python3 -m venv .venv
 > source .venv/bin/activate
-> pip3 install Equation dearpygui numpy scipy
+> pip3 install Equation dearpygui numpy scipy clipboard
 ```
 
 Your IDE may freak out because Equation is an old unmaintained lib. 
