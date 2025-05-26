@@ -52,7 +52,7 @@ app = App()
 the_psw = psw(app)
 create_DS_folder_chooser(app)
 
-dpg.create_viewport(title='PhaseSpacePlot', width=1100, height=750)
+dpg.create_viewport(title='PhaseSpacePlot', width=1500, height=750)
 dpg.setup_dearpygui()
 dpg.show_viewport()
 dpg.start_dearpygui()
