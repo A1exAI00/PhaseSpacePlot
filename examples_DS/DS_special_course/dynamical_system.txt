@@ -1,0 +1,4 @@
+var p1, p2
+par g1, g2, k, d
+F[1] = g1 - sin(p1) - k*sin(p2-p1)
+F[2] = g2 - sin(p2) + d*sin(p2-p1)
