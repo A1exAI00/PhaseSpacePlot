@@ -6,6 +6,8 @@ class App:
         self.variable_names = None
         self.parameter_names = None
         self.ODEs = None
+
+        self.active_workbench = None
         return
 
     def print_interesting(self):
