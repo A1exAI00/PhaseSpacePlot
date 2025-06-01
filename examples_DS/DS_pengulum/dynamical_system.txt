@@ -1,4 +1,4 @@
 var phi, y
-par mu
+par g, mu
 F[1] = y
-F[2] = -mu*y - sin(phi)
+F[2] = g - mu*y - sin(phi)
