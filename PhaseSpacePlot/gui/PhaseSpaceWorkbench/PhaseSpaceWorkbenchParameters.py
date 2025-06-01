@@ -23,21 +23,20 @@ class PhaseSpaceWorkbenchParameters:
                                         format=self.parameter_step_format)
                     
                     # Create a contect menu for the parameter
-                    with dpg.popup(parent=group, no_move=True):
-                        with dpg.group(label=parameter_name):
-                            dpg.add_button(label="Copy parameter name=value", callback=self.callback_copy_parameter_value_w_name)
-                            dpg.add_button(label="Copy all parameter values", callback=self.callback_copy_all_parameter_values)
-                            dpg.add_button(label="Paste all parameter values", callback=self.callback_paste_all_parameter_values)
+                with dpg.popup(parent=group, no_move=True):
+                    dpg.add_button(label="Copy parameter name=value", callback=self.callback_copy_parameter_value, user_data={"parameter_name":parameter_name, "name":True})
+                    dpg.add_button(label="Copy all parameter values", callback=self.callback_copy_all_parameter_values)
+                    dpg.add_button(label="Paste all parameter values", callback=self.callback_paste_all_parameter_values)
         return
 
     def delete_dynamical_system_parameters_window(self):
         dpg.delete_item("dynamical_system_parameters_window")
         return
     
-    def callback_change_parameter(self, sender, app_data): # TODO consider sender
-        for (n, trajectory) in self.trajectories.items():
+    def callback_change_parameter(self, sender, app_data):
+        for (n, trajectory) in self.dragpoint_trajectories.items():
             self.update_from_dragpoint_table_to_trajectory(n)
-            self.update_from_trajectory_to_plot(n)
+            self.update_from_dragpoint_trajectory_to_plot(n)
         return
     
     def callback_change_parameter_step(self, sender, app_data):
@@ -46,19 +45,23 @@ class PhaseSpaceWorkbenchParameters:
             dpg.configure_item(parameter_name, step=new_step)
         return
     
-    def callback_copy_parameter_value_w_name(self, sender, app_data):
+    def callback_copy_parameter_value(self, sender, app_data, user_data):
         # Hide context menu
-        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
+        dpg.hide_item(dpg.get_item_parent(sender))
 
         # Get parameter_name from the layout of the context menu
-        parameter_name = dpg.get_item_label(dpg.get_item_parent(sender))
+        parameter_name = user_data["parameter_name"]
+        include_name = user_data["name"]
 
-        clip.copy(f"{parameter_name}={dpg.get_value(parameter_name)}")
+        if include_name:
+            clip.copy(f"{parameter_name}={dpg.get_value(parameter_name)}")
+        else:
+            clip.copy(f"{dpg.get_value(parameter_name)}")
         return
 
     def callback_copy_all_parameter_values(self, sender, app_data):
         # Hide context menu
-        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
+        dpg.hide_item(dpg.get_item_parent(sender))
 
         # Create a strings of "par_n=val_n"
         result = [f"{parameter_name}={dpg.get_value(parameter_name)}" for parameter_name in self.app.parameter_names]
@@ -71,7 +74,7 @@ class PhaseSpaceWorkbenchParameters:
     
     def callback_paste_all_parameter_values(self, sender, app_data):
         # Hide context menu
-        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
+        dpg.hide_item(dpg.get_item_parent(sender))
 
         # Read clipboard
         parameter_values_str = clip.paste().replace(" ", "")

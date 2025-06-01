@@ -30,7 +30,7 @@ class PhaseSpaceWorkbenchPlotOptions:
         dpg.configure_item('y_axis', label=y_axis_label)
 
         # Redraw every trajectory and dragpoint because of new axis
-        for (n,trajectory) in self.trajectories.items():
+        for (n,trajectory) in self.dragpoint_trajectories.items():
             curr_sol = trajectory.sol
             curr_t_sol = trajectory.t_sol
             if x_axis_i == len(self.app.variable_names):
@@ -47,5 +47,5 @@ class PhaseSpaceWorkbenchPlotOptions:
                 y_axis_data = curr_sol[y_axis_i]
                 new_y_dragpoint = y_axis_data[0]
             dpg.set_value(f"dragpoint_{n}", [new_x_dragpoint, new_y_dragpoint])
-            dpg.set_value(f"plot{n}", [x_axis_data, y_axis_data])
+            dpg.set_value(f"dragpoint_plot_{n}", [x_axis_data, y_axis_data])
         return 

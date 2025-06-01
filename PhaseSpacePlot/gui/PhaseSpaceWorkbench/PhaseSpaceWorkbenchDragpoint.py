@@ -10,13 +10,15 @@ class PhaseSpaceWorkbenchDragpoint:
     def get_dragpoint_table_init_state(self,n):
         variable_tags = [f"dragpoint_table_{variable_name}_{n}" for (i, variable_name) in enumerate(self.app.variable_names)]
         return np.array(dpg.get_values(variable_tags))
-    
+
+    def get_dragpoint_last_state(self, n):
+        return np.array([self.dragpoint_trajectories[n].sol[i][-1] for (i, variable_name) in enumerate(self.app.variable_names)])
+
     def setup_dragpoint_init_state_window(self):
-        with dpg.window(label='Dragpoint Initial States', tag="dragpoint_init_state_window", pos=(0, 300), height=400):
+        with dpg.window(label='Dragpoint Initial States', tag="dragpoint_init_state_window", pos=(0, 150), height=400):
 
             # Button to create new dragpoint
-            dpg.add_button(label="Add Dragpoint Initial State",tag="add_dragpoint_init_state",
-                        callback=self.callbcak_add_dragpoint)
+            dpg.add_button(label="Add Dragpoint Initial State", callback=self.callbcak_add_dragpoint)
             
             # Create a list of headers for dragpoint table
             header_for_variables = []
@@ -39,14 +41,14 @@ class PhaseSpaceWorkbenchDragpoint:
                     dpg.add_table_column(label=header_text)
                 
                 # Add a row for each trajectory
-                for (n, trajectory) in self.trajectories.items():
+                for (n, trajectory) in self.dragpoint_trajectories.items():
                     self.add_row_to_dragpoint_table(n)
         return
-    
+
     def delete_dragpoint_init_state_window(self):
         dpg.delete_item("dragpoint_init_state_window")
         return
-    
+
     def add_row_to_dragpoint_table(self, n):
         with dpg.table_row(parent="dragpoint_init_state_table"):
             
@@ -54,75 +56,73 @@ class PhaseSpaceWorkbenchDragpoint:
             dpg.add_text(str(n))
 
             # Chechbox show/hide dragpoint and trajectory
-            with dpg.group(label=f"{n}") as group:
-                dpg.add_checkbox(label="", 
-                                 default_value=True, 
-                                 callback=self.callback_dragpoint_table_toggle_visibility)
+            dpg.add_checkbox(label="", 
+                             default_value=True, 
+                             callback=self.callback_dragpoint_table_toggle_visibility,
+                             user_data={"n":n})
 
             # Direction of integration combo box
-            with dpg.group(label=f"{n}") as group:
-                dpg.add_combo(label="", 
-                              tag=f"dragpoint_table_dt_{n}", 
-                              width=40,
-                              items=self.integrate_directions, 
-                              default_value=self.integrate_direction_default, 
-                              callback=self.callback_dragpoint_table_change_option)
+            dpg.add_combo(label="", 
+                          tag=f"dragpoint_table_dt_{n}", 
+                          width=40,
+                          items=self.integrate_directions, 
+                          default_value=self.integrate_direction_default, 
+                          callback=self.callback_dragpoint_table_change_option,
+                          user_data={"n":n})
             
             # Variable input and variable step input for every variable_name
             for (i, variable_name) in enumerate(self.app.variable_names):
-                with dpg.group(label=f"{n}") as group:
-                    dpg.add_input_float(label="", 
-                                        tag=f"dragpoint_table_{variable_name}_{n}", 
-                                        default_value=self.dragpoint_table_default_variable_value, 
-                                        callback=self.callback_change_variable_in_dragpoint_table, 
-                                        width=self.dragpoint_table_variable_input_width, 
-                                        format=self.dragpoint_table_variable_format,
-                                        step=self.dragpoint_table_default_variable_step_value)
-                    
+                dpg.add_input_float(label="", 
+                                    tag=f"dragpoint_table_{variable_name}_{n}", 
+                                    default_value=self.dragpoint_table_default_variable_value, 
+                                    callback=self.callback_dragpoint_table_change_variable, 
+                                    user_data={"n":n},
+                                    width=self.dragpoint_table_variable_input_width, 
+                                    format=self.dragpoint_table_variable_format,
+                                    step=self.dragpoint_table_default_variable_step_value)
+        
                 # Context menu for variable input
-                with dpg.popup(parent=group):
-                    with dpg.group(label=f"{variable_name}_{n}") as group1:
-                        dpg.add_button(label="Copy name=value", callback=self.callback_dragpoint_table_copy_variable_w_name)
-                        dpg.add_button(label="Copy init state", callback=self.callback_dragpoint_table_copy_init_state)
-                        dpg.add_button(label="Copy last state", callback=self.callback_dragpoint_table_copy_last_state)
-                        dpg.add_separator()
-                        dpg.add_button(label="Paste init state", callback=self.callback_dragpoint_table_paste_init_state)
-                        dpg.add_separator()
-                        dpg.add_button(label="Copy trajectory as python lists", callback=self.callback_dragpoint_table_copy_trajectory_python)
-                        dpg.add_button(label="Copy trajectory as numpy array", callback=self.callback_dragpoint_table_copy_trajectory_numpy)
+                with dpg.popup(parent=dpg.last_item()):
+                    dpg.add_button(label="Copy name=value", callback=self.callback_dragpoint_table_copy_variable, user_data={"n":n, "variable":variable_name, "name":True})
+                    dpg.add_button(label="Copy init state", callback=self.callback_dragpoint_table_copy_init_state, user_data={"n":n})
+                    dpg.add_button(label="Copy last state", callback=self.callback_dragpoint_table_copy_last_state, user_data={"n":n})
+                    dpg.add_separator()
+                    dpg.add_button(label="Paste init state", callback=self.callback_dragpoint_table_paste_init_state, user_data={"n":n})
+                    dpg.add_separator()
+                    dpg.add_button(label="Copy trajectory as python lists", callback=self.callback_dragpoint_table_copy_trajectory, user_data={"n":n, "type":"python"})
+                    dpg.add_button(label="Copy trajectory as numpy array", callback=self.callback_dragpoint_table_copy_trajectory, user_data={"n":n, "type":"numpy"})
 
                 # Variable step input
-                with dpg.group(label=f"{n}") as group:
-                    dpg.add_input_float(label="", 
-                                        tag=f"dragpoint_table_{variable_name}_step_{n}", 
-                                        default_value=self.dragpoint_table_default_variable_step_value, 
-                                        callback=self.callback_change_variable_step, 
-                                        width=self.dragpoint_table_variable_step_input_width, 
-                                        format=self.dragpoint_table_variable_step_format,
-                                        step=0.0)
+                dpg.add_input_float(label="", 
+                                    tag=f"dragpoint_table_{variable_name}_step_{n}", 
+                                    default_value=self.dragpoint_table_default_variable_step_value, 
+                                    callback=self.callback_dragpoint_table_change_variable_step, 
+                                    width=self.dragpoint_table_variable_step_input_width, 
+                                    format=self.dragpoint_table_variable_step_format,
+                                    step=0.0)
             
             # Integration start, end and steps inputs
-            with dpg.group(label=f"{n}"):
-                dpg.add_input_float(label="", 
-                                    tag=f"dragpoint_table_t_start_{n}",
-                                    callback=self.callback_dragpoint_table_change_option,
-                                    default_value=self.dragpoint_table_default_t_start, 
-                                    width=self.dragpoint_table_option_input_width,
-                                    step=0.0)
-            with dpg.group(label=f"{n}"):
-                dpg.add_input_float(label="", 
-                                    tag=f"dragpoint_table_t_end_{n}",
-                                    callback=self.callback_dragpoint_table_change_option,
-                                    default_value=self.dragpoint_table_default_t_end, 
-                                    width=self.dragpoint_table_option_input_width,
-                                    step=0.0)
-            with dpg.group(label=f"{n}"):
-                dpg.add_input_int(label="", 
-                                tag=f"dragpoint_table_t_steps_{n}",
+            dpg.add_input_float(label="", 
+                                tag=f"dragpoint_table_t_start_{n}",
                                 callback=self.callback_dragpoint_table_change_option,
-                                default_value=self.dragpoint_table_default_t_steps, 
+                                user_data={"n":n},
+                                default_value=self.dragpoint_table_default_t_start, 
                                 width=self.dragpoint_table_option_input_width,
                                 step=0.0)
+            dpg.add_input_float(label="", 
+                                tag=f"dragpoint_table_t_end_{n}",
+                                callback=self.callback_dragpoint_table_change_option,
+                                user_data={"n":n},
+                                default_value=self.dragpoint_table_default_t_end, 
+                                width=self.dragpoint_table_option_input_width,
+                                step=0.0)
+            dpg.add_input_int(label="", 
+                              tag=f"dragpoint_table_t_steps_{n}",
+                              callback=self.callback_dragpoint_table_change_option,
+                              user_data={"n":n},
+                              default_value=self.dragpoint_table_default_t_steps, 
+                              width=self.dragpoint_table_option_input_width,
+                              step=0.0)
         return
 
     def update_from_dragpoint_to_dragpoint_table(self, n):
@@ -169,26 +169,42 @@ class PhaseSpaceWorkbenchDragpoint:
         init_state = self.get_dragpoint_table_init_state(n)
 
         # Reintegrate with new parameters
-        trajectory = self.trajectories[n]
+        trajectory = self.dragpoint_trajectories[n]
         trajectory.init_state = init_state
-        trajectory.integrate_scipy(self.app.ODEs, pars, integration_t_start, integration_t_end, integration_t_steps)
+        trajectory.integrate_scipy(self.app.ODEs, init_state, pars, integration_t_start, integration_t_end, integration_t_steps)
         return
 
-    def callback_dragpoint_table_change_option(self, sender, app_data):
-        n = int(dpg.get_item_label(dpg.get_item_parent(sender)))
+    def update_from_dragpoint_trajectory_to_plot(self, n):
+        _, _, x_axis_i, y_axis_i = self.get_axis_labels()
+
+        sol, t_sol = self.dragpoint_trajectories[n].sol, self.dragpoint_trajectories[n].t_sol
+        if x_axis_i == len(self.app.variable_names):
+            x_axis_data = t_sol
+        else:
+            x_axis_data = sol[x_axis_i]
+
+        if y_axis_i == len(self.app.variable_names):
+            y_axis_data = t_sol
+        else:
+            y_axis_data = sol[y_axis_i]
+        dpg.set_value(f"dragpoint_plot_{n}", [x_axis_data, y_axis_data])
+        return
+
+    def callback_dragpoint_table_change_option(self, sender, app_data, user_data):
+        n = user_data["n"]
         self.update_from_dragpoint_table_to_trajectory(n)
-        self.update_from_trajectory_to_plot(n)
+        self.update_from_dragpoint_trajectory_to_plot(n)
         return
 
-    def callback_change_variable_in_dragpoint_table(self, sender, app_data):
-        n = int(dpg.get_item_label(dpg.get_item_parent(sender)))
+    def callback_dragpoint_table_change_variable(self, sender, app_data, user_data):
+        n = user_data["n"]
         self.update_from_dragpoint_table_to_dragpoint(n)
         self.update_from_dragpoint_table_to_trajectory(n)
-        self.update_from_trajectory_to_plot(n)
+        self.update_from_dragpoint_trajectory_to_plot(n)
         return
 
-    def callback_change_variable_step(self, sender, app_data):
-        for (n, trajectory) in self.app.trajectories.items():
+    def callback_dragpoint_table_change_variable_step(self, sender, app_data):
+        for (n, trajectory) in self.dragpoint_trajectories.items():
             for (i, variable_name) in enumerate(self.app.variable_names):
                 new_step = dpg.get_value(f"dragpoint_table_{variable_name}_step_{n}")
                 dpg.configure_item(f"dragpoint_table_{variable_name}_{n}", step=new_step)
@@ -196,9 +212,9 @@ class PhaseSpaceWorkbenchDragpoint:
 
     def callbcak_add_dragpoint(self, sender, app_data):
         # New ordinal number bigger then others, create new trajectory
-        n_new = max(self.trajectories.keys())+1
-        trajectory_new = Trajectory(np.zeros(len(self.app.variable_names)))
-        self.trajectories[n_new] = trajectory_new
+        n_new = max(self.dragpoint_trajectories.keys())+1
+        trajectory_new = Trajectory()
+        self.dragpoint_trajectories[n_new] = trajectory_new
 
         # New row in the dragpoint table
         self.add_row_to_dragpoint_table(n_new)
@@ -208,49 +224,50 @@ class PhaseSpaceWorkbenchDragpoint:
                         tag=f"dragpoint_{n_new}", 
                         parent="phase_space_plot",
                         callback=self.callback_change_dragpoint_position, 
+                        user_data={"n":n_new},
                         color=[255, 0, 0, 150])
-        dpg.add_line_series([], [], label='PhaseSpacePlot', parent='y_axis', tag=f"plot{n_new}")
+        dpg.add_line_series([], [], label='PhaseSpacePlot', parent='y_axis', tag=f"dragpoint_plot_{n_new}")
 
         # Refresh this trajectory
         self.update_from_dragpoint_to_dragpoint_table(n_new)
         self.update_from_dragpoint_table_to_dragpoint(n_new)
         self.update_from_dragpoint_table_to_trajectory(n_new)
-        self.update_from_trajectory_to_plot(n_new)
+        self.update_from_dragpoint_trajectory_to_plot(n_new)
         return
 
-    def callback_dragpoint_table_toggle_visibility(self, sender, app_data):
-        n = int(dpg.get_item_label(dpg.get_item_parent(sender)))
+    def callback_dragpoint_table_toggle_visibility(self, sender, app_data, user_data):
+        n = user_data["n"]
         show = dpg.get_value(sender) 
         if show:
             dpg.show_item(f"dragpoint_{n}")
-            dpg.show_item(f"plot{n}")
+            dpg.show_item(f"dragpoint_plot_{n}")
         else:
             dpg.hide_item(f"dragpoint_{n}")
-            dpg.hide_item(f"plot{n}")
+            dpg.hide_item(f"dragpoint_plot_{n}")
         return
     
-    def callback_dragpoint_table_copy_variable_w_name(self, sender, app_data):
+    def callback_dragpoint_table_copy_variable(self, sender, app_data, user_name):
         # Hide context menu
-        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
+        dpg.hide_item(dpg.get_item_parent(sender))
 
-        # Get variable_name_n from the layout of the context menu
-        variable_n = dpg.get_item_label(dpg.get_item_parent(sender))
-        variable_name, _ = variable_n.split("_")
-        tag = f"dragpoint_table_{variable_n}"
-
-        clip.copy(f"{variable_name}={dpg.get_value(tag)}")
+        # Get variable_name and n from the layout of the context menu
+        n = user_name["n"]
+        variable_name = user_name["variable"]
+        include_name = user_name["name"]
+        tag = f"dragpoint_table_{variable_name}_{n}"
+        
+        if include_name:
+            clip.copy(f"{variable_name}={dpg.get_value(tag)}")
+        else:
+            clip.copy(f"{dpg.get_value(tag)}")
         return
 
-    def callback_dragpoint_table_copy_init_state(self, sender, app_data):
+    def callback_dragpoint_table_copy_init_state(self, sender, app_data, user_data):
         # Hide context menu
-        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
-
-        # Get variable_name_n from the layout of the context menu
-        variable_n = dpg.get_item_label(dpg.get_item_parent(sender))
-        variable_name, n = variable_n.split("_")
-        n = int(n)
+        dpg.hide_item(dpg.get_item_parent(sender))
 
         # Create a strings of "var_n=val_n"
+        n = user_data["n"]
         init_state = self.get_dragpoint_table_init_state(n)
         result = [f"{variable_name}={init_state[i]}" for (i,variable_name) in enumerate(self.app.variable_names)]
         sep = self.separator_default
@@ -259,14 +276,12 @@ class PhaseSpaceWorkbenchDragpoint:
         clip.copy(sep.join(result))
         return
 
-    def callback_dragpoint_table_paste_init_state(self, sender, app_data):
+    def callback_dragpoint_table_paste_init_state(self, sender, app_data, user_data):
         # Hide context menu
-        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
+        dpg.hide_item(dpg.get_item_parent(sender))
 
         # Which n trajectory has been clicked
-        variable_n = dpg.get_item_label(dpg.get_item_parent(sender))
-        _, n = variable_n.split("_")
-        n = int(n)
+        n = user_data["n"]
 
         # Read the clipboard
         variable_values_str = clip.paste().replace(" ", "")
@@ -281,19 +296,16 @@ class PhaseSpaceWorkbenchDragpoint:
                 dpg.set_value(f"dragpoint_table_{variable_name}_{n}", float(variable_value))
         self.update_from_dragpoint_table_to_dragpoint(n)
         self.update_from_dragpoint_table_to_trajectory(n)
-        self.update_from_trajectory_to_plot(n)
+        self.update_from_dragpoint_trajectory_to_plot(n)
         return
     
-    def callback_dragpoint_table_copy_last_state(self, sender, app_data):
+    def callback_dragpoint_table_copy_last_state(self, sender, app_data, user_data):
         # Hide context menu
-        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
+        dpg.hide_item(dpg.get_item_parent(sender))
 
         # Which n trajectory has been clicked
-        variable_n = dpg.get_item_label(dpg.get_item_parent(sender))
-        _, n = variable_n.split("_")
-        n = int(n)
-
-        last_state = self.get_last_state(n)
+        n = user_data["n"]
+        last_state = self.get_dragpoint_last_state(n)
         result = [f"{variable_name}={last_state[i]}" for (i,variable_name) in enumerate(self.app.variable_names)]
         sep = self.separator_default
         if self.separator_add_whitespace:
@@ -301,34 +313,22 @@ class PhaseSpaceWorkbenchDragpoint:
         clip.copy(sep.join(result))
         return
     
-    def callback_dragpoint_table_copy_trajectory_python(self, sender, app_data):
+    def callback_dragpoint_table_copy_trajectory(self, sender, app_data, user_data):
         # Hide context menu
-        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
+        dpg.hide_item(dpg.get_item_parent(sender))
 
         # Which n trajectory has been clicked
-        variable_n = dpg.get_item_label(dpg.get_item_parent(sender))
-        _, n = variable_n.split("_")
-        n = int(n)
-        
-        trajectory = self.trajectories[n]
-        lines = [f"{variable_name} = {trajectory.sol[i].tolist()}" for (i,variable_name) in enumerate(self.app.variable_names)]
-        lines.append(f"t = {trajectory.t_sol.tolist()}")
-        result = "\n".join(lines)
-        clip.copy(result)
-        return
-    
-    def callback_dragpoint_table_copy_trajectory_numpy(self, sender, app_data):
-        # Hide context menu
-        dpg.hide_item(dpg.get_item_parent(dpg.get_item_parent(sender)))
+        n = user_data["n"]
+        trajectory = self.dragpoint_trajectories[n]
 
-        # Which n trajectory has been clicked
-        variable_n = dpg.get_item_label(dpg.get_item_parent(sender))
-        _, n = variable_n.split("_")
-        n = int(n)
-        
-        trajectory = self.trajectories[n]
-        lines = [f"{variable_name} = np.array({trajectory.sol[i].tolist()})" for (i,variable_name) in enumerate(self.app.variable_names)]
-        lines.append(f"t = np.array({trajectory.t_sol.tolist()})")
+        copy_type = user_data["type"]
+        if copy_type == "python":
+            lines = [f"{variable_name} = {trajectory.sol[i].tolist()}" for (i,variable_name) in enumerate(self.app.variable_names)]
+            lines.append(f"t = {trajectory.t_sol.tolist()}")
+        elif copy_type == "numpy":
+            lines = [f"{variable_name} = np.array({trajectory.sol[i].tolist()})" for (i,variable_name) in enumerate(self.app.variable_names)]
+            lines.append(f"t = np.array({trajectory.t_sol.tolist()})")
+
         result = "\n".join(lines)
         clip.copy(result)
         return
