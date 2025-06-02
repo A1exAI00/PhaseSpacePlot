@@ -125,6 +125,12 @@ class PhaseSpaceWorkbenchNearSoE:
                               width=self.near_SoE_option_input_width,
                               step=0.0)
             
+            with dpg.popup(parent=dpg.last_item()):
+                dpg.add_text("", tag=f"near_SoE_eigenvalue_popup_text_{n}")
+                dpg.add_button(label="Copy eigenvalues", callback=self.callback_near_SoE_table_copy_eigenvalues, user_data={"n":n, "type":"python"})
+                dpg.add_text("", tag=f"near_SoE_eigenvector_popup_text_{n}")
+                dpg.add_button(label="Copy eigenvectors", callback=self.callback_near_SoE_table_copy_eigenvectors, user_data={"n":n, "type":"python"})
+            
             # Combo box for eigenvectors
             dpg.add_combo(label="", 
                           tag=f"near_SoE_table_eig_dir_{n}", 
@@ -284,6 +290,14 @@ class PhaseSpaceWorkbenchNearSoE:
         else:
             dpg.set_value(f"near_SoE_table_dt_{n}", "+")
 
+        # Change text in "eig. N" popup
+        eigenvalues_texts = [f"{i} : {self.near_SoE_eigenvalues[n][i]}" for i in range(len(self.app.variable_names))]
+        eigenvalues_text = "\n".join(eigenvalues_texts)
+        dpg.set_value(f"near_SoE_eigenvalue_popup_text_{n}", eigenvalues_text)
+        eigenvectors_texts = [f"{i} : {self.near_SoE_eigenvectors[n][i].tolist()}" for i in range(len(self.app.variable_names))]
+        eigenvectors_text = "\n".join(eigenvectors_texts)
+        dpg.set_value(f"near_SoE_eigenvector_popup_text_{n}", eigenvectors_text)
+
         # Reintegrate and redraw
         self.update_from_near_SoE_table_to_trajectory(n)
         self.update_from_near_SoE_trajectory_to_plot(n)
@@ -311,16 +325,121 @@ class PhaseSpaceWorkbenchNearSoE:
         return
     
     def callback_near_SoE_table_copy_variable(self, sender, app_data, user_data):
+        # Hide context menu
+        dpg.hide_item(dpg.get_item_parent(sender))
+
+        n = user_data["n"]
+        variable_name = user_data["variable"]
+        include_name = user_data["name"]
+        tag = f"near_SoE_table_{variable_name}_{n}"
+        
+        if include_name:
+            clip.copy(f"{variable_name}={dpg.get_value(tag)}")
+        else:
+            clip.copy(f"{dpg.get_value(tag)}")
         return
     
     def callback_near_SoE_table_copy_init_state(self, sender, app_data, user_data):
+        # Hide context menu
+        dpg.hide_item(dpg.get_item_parent(sender))
+
+        n = user_data["n"]
+
+        # Create strings of "var_n=val_n"
+        init_state = self.get_near_SoE_table_init_state(n)
+        result = [f"{variable_name}={init_state[i]}" for (i,variable_name) in enumerate(self.app.variable_names)]
+        sep = self.separator_default
+        if self.separator_add_whitespace:
+            sep = sep + " "
+        clip.copy(sep.join(result))
         return
     
     def callback_near_SoE_table_copy_last_state(self, sender, app_data, user_data):
+        # Hide context menu
+        dpg.hide_item(dpg.get_item_parent(sender))
+
+        n = user_data["n"]
+
+        # Create strings of "var_n=val_n"
+        last_state = self.get_near_SoE_last_state(n)
+        result = [f"{variable_name}={last_state[i]}" for (i,variable_name) in enumerate(self.app.variable_names)]
+        sep = self.separator_default
+        if self.separator_add_whitespace:
+            sep = sep + " "
+        clip.copy(sep.join(result))
         return
     
     def callback_near_SoE_table_paste_init_state(self, sender, app_data, user_data):
+        # Hide context menu
+        dpg.hide_item(dpg.get_item_parent(sender))
+
+        # Which n trajectory has been clicked
+        n = user_data["n"]
+
+        # Read the clipboard
+        variable_values_str = clip.paste().replace(" ", "")
+
+        for sep in self.separators_supported:
+            if sep not in variable_values_str:
+                continue
+            variable_values_split = variable_values_str.split(sep)
+            for split in variable_values_split:
+                variable_name = split[:split.find("=")]
+                variable_value = split[split.find("=")+1:]
+                dpg.set_value(f"near_SoE_table_{variable_name}_{n}", float(variable_value))
+
+        if not self.near_SoE_autocorrect[n]:
+            return
+        
+        self.callback_near_SoE_table_correct(None, None, {"n":n})
         return
     
     def callback_near_SoE_table_copy_trajectory(self, sender, app_data, user_data):
+        # Hide context menu
+        dpg.hide_item(dpg.get_item_parent(sender))
+
+        # Which n trajectory has been clicked
+        n = user_data["n"]
+        trajectory = self.near_SoE_trajectories[n]
+
+        copy_type = user_data["type"]
+        if copy_type == "python":
+            lines = [f"{variable_name} = {trajectory.sol[i].tolist()}" for (i,variable_name) in enumerate(self.app.variable_names)]
+            lines.append(f"t = {trajectory.t_sol.tolist()}")
+        elif copy_type == "numpy":
+            lines = [f"{variable_name} = np.array({trajectory.sol[i].tolist()})" for (i,variable_name) in enumerate(self.app.variable_names)]
+            lines.append(f"t = np.array({trajectory.t_sol.tolist()})")
+
+        result = "\n".join(lines)
+        clip.copy(result)
+        return
+    
+    def callback_near_SoE_table_copy_eigenvalues(self, sender, app_data, user_data):
+        # Hide context menu
+        dpg.hide_item(dpg.get_item_parent(sender))
+
+        n = user_data["n"]
+        copy_type = user_data["type"]
+
+        if copy_type == "python":
+            eigenvalues_texts = [f"eigenvalue_{i} = {self.near_SoE_eigenvalues[n][i]}" for i in range(len(self.app.variable_names))]
+            eigenvalues_text = "\n".join(eigenvalues_texts)
+        else:
+            return
+        clip.copy(eigenvalues_text)
+        return
+    
+    def callback_near_SoE_table_copy_eigenvectors(self, sender, app_data, user_data):
+        # Hide context menu
+        dpg.hide_item(dpg.get_item_parent(sender))
+
+        n = user_data["n"]
+        copy_type = user_data["type"]
+
+        if copy_type == "python":
+            eigenvectors_texts = [f"eigenvector_{i} = {self.near_SoE_eigenvectors[n][i].tolist()}" for i in range(len(self.app.variable_names))]
+            eigenvectors_text = "\n".join(eigenvectors_texts)
+        else:
+            return
+        clip.copy(eigenvectors_text)
         return
