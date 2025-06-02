@@ -41,8 +41,6 @@ class PhaseSpaceWorkbenchParameters:
         for (n, trajectory) in self.near_SoE_trajectories.items():
             if self.near_SoE_autocorrect[n]:
                 self.callback_near_SoE_table_correct(None, None, {"n":n})
-            self.update_from_near_SoE_table_to_trajectory(n)
-            self.update_from_near_SoE_trajectory_to_plot(n)
         return
     
     def callback_change_parameter_step(self, sender, app_data):

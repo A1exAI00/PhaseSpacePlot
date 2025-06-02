@@ -49,6 +49,10 @@ class PhaseSpaceWorkbenchNearSoE:
         dpg.delete_item("near_SoE_init_state_window")
         return
     
+    def delete_near_SoE_plot(self, n):
+        dpg.set_value(f"near_SoE_plot_{n}", [[], []])
+        return
+    
     def add_row_to_near_SoE_table(self, n):
         with dpg.table_row(parent="near_SoE_init_state_table"):
             
@@ -278,16 +282,6 @@ class PhaseSpaceWorkbenchNearSoE:
         self.near_SoE_eigenvalues[n] = [eigenvalue for eigenvalue in _eigenvalues]
         self.near_SoE_eigenvectors[n] = [eigenvector for eigenvector in _eigenvectors.T]
 
-        # if eigemvalues have incorrect shape
-        if len(self.near_SoE_eigenvalues[n]) != len(self.app.variable_names):
-            return
-
-        # Change integration direction
-        if np.real(self.near_SoE_eigenvalues[n][current_eig_N]) < 0.0:
-            dpg.set_value(f"near_SoE_table_dt_{n}", "-")
-        else:
-            dpg.set_value(f"near_SoE_table_dt_{n}", "+")
-
         # Change text in "eig. N" popup
         eigenvalues_texts = [f"{i} : {self.near_SoE_eigenvalues[n][i]}" for i in range(len(self.app.variable_names))]
         eigenvalues_text = "\n".join(eigenvalues_texts)
@@ -296,6 +290,19 @@ class PhaseSpaceWorkbenchNearSoE:
         eigenvectors_text = "\n".join(eigenvectors_texts)
         dpg.set_value(f"near_SoE_eigenvector_popup_text_{n}", eigenvectors_text)
 
+        if len(self.near_SoE_eigenvalues[n]) != len(self.app.variable_names):
+            self.delete_near_SoE_plot(n)
+            return
+        if np.iscomplexobj(self.near_SoE_eigenvectors[n]):
+            self.delete_near_SoE_plot(n)
+            return
+        
+        # Change integration direction
+        if np.real(self.near_SoE_eigenvalues[n][current_eig_N]) < 0.0:
+            dpg.set_value(f"near_SoE_table_dt_{n}", "-")
+        else:
+            dpg.set_value(f"near_SoE_table_dt_{n}", "+")
+        
         # Reintegrate and redraw
         self.update_from_near_SoE_table_to_trajectory(n)
         self.update_from_near_SoE_trajectory_to_plot(n)
