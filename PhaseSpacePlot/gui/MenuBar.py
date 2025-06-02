@@ -1,9 +1,5 @@
-import os
-import numpy as np
 import dearpygui.dearpygui as dpg
-from Equation import Expression
 
-from utils.DS_from_file import load_DS_from_file
 from gui.PhaseSpaceWorkbench.PhaseSpaceWorkbench import PhaseSpaceWorkbench as psw
 
 #########################################################################################
@@ -45,15 +41,9 @@ class MenuBar:
     
     def callback_process_DS_folder(self, sender, app_data):
         # Get dynamical system folder
-        self.app.DS_folder_path = app_data["file_path_name"]
-        self.app.DS_file_path = os.path.join(self.app.DS_folder_path, self.app.DS_file_name)
-
-        # Dynamical System setup
-        variable_names, parameter_names, equations = load_DS_from_file(self.app.DS_file_path)
-        self.app.variable_names = variable_names
-        self.app.parameter_names = parameter_names
-        equations_objs = [Expression(eq, self.app.variable_names+self.app.parameter_names) for (i,eq) in enumerate(equations)]
-        self.app.ODEs = lambda U, p, t: [eq_obj(*np.concat((U,p))) for eq_obj in equations_objs]
+        folder_path = app_data["file_path_name"]
+        
+        self.app.load_DS_info_exec(folder_path)
 
         self.app.print_interesting()
         return
