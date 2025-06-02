@@ -1,4 +1,0 @@
-var u, y
-par c, a
-F[1] = y
-F[2] = - c*y - u*(u-a)*(1-u)

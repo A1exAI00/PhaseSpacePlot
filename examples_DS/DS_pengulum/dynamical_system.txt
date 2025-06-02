@@ -1,4 +1,0 @@
-var phi, y
-par g, mu
-F[1] = y
-F[2] = g - mu*y - sin(phi)
