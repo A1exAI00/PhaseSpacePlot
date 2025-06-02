@@ -64,11 +64,12 @@ class PhaseSpaceWorkbenchDragpoint:
             # Direction of integration combo box
             dpg.add_combo(label="", 
                           tag=f"dragpoint_table_dt_{n}", 
-                          width=40,
+                          width=20,
                           items=self.integrate_directions, 
                           default_value=self.integrate_direction_default, 
                           callback=self.callback_dragpoint_table_change_option,
-                          user_data={"n":n})
+                          user_data={"n":n},
+                          no_arrow_button=True)
             
             # Variable input and variable step input for every variable_name
             for (i, variable_name) in enumerate(self.app.variable_names):
@@ -170,7 +171,6 @@ class PhaseSpaceWorkbenchDragpoint:
 
         # Reintegrate with new parameters
         trajectory = self.dragpoint_trajectories[n]
-        trajectory.init_state = init_state
         trajectory.integrate_scipy(self.app.ODEs, init_state, pars, integration_t_start, integration_t_end, integration_t_steps)
         return
 
@@ -188,6 +188,14 @@ class PhaseSpaceWorkbenchDragpoint:
         else:
             y_axis_data = sol[y_axis_i]
         dpg.set_value(f"dragpoint_plot_{n}", [x_axis_data, y_axis_data])
+        return
+    
+    def callback_change_dragpoint_position(self, sender, app_data, user_data):
+        n = user_data["n"]
+        self.update_from_dragpoint_to_dragpoint_table(n)
+        self.update_from_dragpoint_table_to_dragpoint(n)
+        self.update_from_dragpoint_table_to_trajectory(n)
+        self.update_from_dragpoint_trajectory_to_plot(n)
         return
 
     def callback_dragpoint_table_change_option(self, sender, app_data, user_data):

@@ -20,6 +20,10 @@ class PhaseSpaceWorkbenchPlot:
                                     user_data={"n":n},
                                     color=[255, 0, 0, 150])
                     dpg.add_line_series([], [], label="", parent='y_axis', tag=f"dragpoint_plot_{n}")
+                
+                # Add plot for every near SoE init state
+                for (n,trajectory) in self.near_SoE_trajectories.items():
+                    dpg.add_line_series([], [], label="", parent='y_axis', tag=f"near_SoE_plot_{n}")
 
         # Refresh all trajectories
         self.callback_change_parameter(None, None)
@@ -34,11 +38,3 @@ class PhaseSpaceWorkbenchPlot:
         x_axis_i = self.axis_posible_labels.index(x_axis_label)
         y_axis_i = self.axis_posible_labels.index(y_axis_label)
         return (x_axis_label, y_axis_label, x_axis_i, y_axis_i)
-
-    def callback_change_dragpoint_position(self, sender, app_data, user_data):
-        n = user_data["n"]
-        self.update_from_dragpoint_to_dragpoint_table(n)
-        self.update_from_dragpoint_table_to_dragpoint(n)
-        self.update_from_dragpoint_table_to_trajectory(n)
-        self.update_from_dragpoint_trajectory_to_plot(n)
-        return

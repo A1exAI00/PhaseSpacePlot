@@ -15,7 +15,8 @@ class PhaseSpaceWorkbenchParameters:
                                         default_value=self.parameter_default, 
                                         callback=self.callback_change_parameter, 
                                         width=self.parameter_input_width, 
-                                        format=self.parameter_format)
+                                        format=self.parameter_format, 
+                                        step=self.parameter_step_default)
                     dpg.add_input_float(label=parameter_name+" step", tag=parameter_name+"_step", 
                                         default_value=self.parameter_step_default, 
                                         callback=self.callback_change_parameter_step,
@@ -37,6 +38,11 @@ class PhaseSpaceWorkbenchParameters:
         for (n, trajectory) in self.dragpoint_trajectories.items():
             self.update_from_dragpoint_table_to_trajectory(n)
             self.update_from_dragpoint_trajectory_to_plot(n)
+        for (n, trajectory) in self.near_SoE_trajectories.items():
+            if self.near_SoE_autocorrect[n]:
+                self.callback_near_SoE_table_correct(None, None, {"n":n})
+            self.update_from_near_SoE_table_to_trajectory(n)
+            self.update_from_near_SoE_trajectory_to_plot(n)
         return
     
     def callback_change_parameter_step(self, sender, app_data):
