@@ -21,9 +21,7 @@ class PhaseSpaceWorkbenchNearSoE:
             # Button to create new init state
             with dpg.group(horizontal=True):
                 dpg.add_button(label="Add Initial State", callback=self.callbcak_add_near_SoE)
-                dpg.add_spacer(width=5)
-                dpg.add_separator()
-                dpg.add_spacer(width=5)
+                dpg.add_spacer(width=10)
                 dpg.add_button(label="Correct All", callback=self.callbcak_near_SoE_correct_all)
             
             # Create a list of headers for near SoE table
