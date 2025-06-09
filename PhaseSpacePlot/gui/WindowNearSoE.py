@@ -167,9 +167,9 @@ class WindowNearSoE:
             
             with dpg.popup(parent=dpg.last_item()):
                 dpg.add_text("", tag=f"near_SoE_eigenvalue_popup_text_{n}")
-                dpg.add_button(label="Copy eigenvalues", callback=self.callback_table_copy_eigen, user_data={"n":n, "type":"python"})
+                dpg.add_button(label="Copy eigenvalues", callback=self.callback_table_copy_eigen, user_data={"n":n, "format_type":"python", "eigen_type":"eigenvalue"})
                 dpg.add_text("", tag=f"near_SoE_eigenvector_popup_text_{n}")
-                dpg.add_button(label="Copy eigenvectors", callback=self.callback_table_copy_eigen, user_data={"n":n, "type":"python"})
+                dpg.add_button(label="Copy eigenvectors", callback=self.callback_table_copy_eigen, user_data={"n":n, "format_type":"python", "eigen_type":"eigenvector"})
             
             # Combo box for eigenvectors
             dpg.add_combo(label="", 
@@ -325,18 +325,21 @@ class WindowNearSoE:
     
     def callback_table_copy_eigen(self, sender, app_data, user_data): # TODO finish
         # Hide context menu
-        # dpg.hide_item(dpg.get_item_parent(sender))
+        dpg.hide_item(dpg.get_item_parent(sender))
 
-        # n = user_data["n"]
-        # format_type = user_data["format_type"]
-        # eigen_type = user_data["eigen_type"]
+        n = user_data["n"]
+        format_type = user_data["format_type"]
+        eigen_type = user_data["eigen_type"]
 
-        # if format_type == "python":
-        #     if eigen_type == "eigenvalue":
-
-        #     texts = [f"{eigen_type}_{i} = {self.near_SoE_eigenvalues[n][i]}" for i in range(len(self.app.variable_names))]
-        #     text = "\n".join(texts)
-        # else:
-        #     return
-        # clip.copy(eigenvalues_text)
+        if (format_type == "python") and (eigen_type == "eigenvalue"):
+            eigenvalue = self._parent.get_eigenvalue(n)
+            texts = [f"eigenvalue_{i} = {eigenvalue[i]}" for (i,_) in enumerate(self._app.variable_names)]
+            text = "\n".join(texts)
+        elif (format_type == "python") and (eigen_type == "eigenvector"):
+            eigenvector = self._parent.get_eigenvector(n)
+            texts = [f"eigenvector_{i} = {eigenvector[i].tolist()}" for (i,_) in enumerate(self._app.variable_names)]
+            text = "\n".join(texts)
+        else:
+            return
+        clip.copy(text)
         return
