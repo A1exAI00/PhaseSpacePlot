@@ -53,7 +53,7 @@ class WorkbenchPhaseSpace(Workbench):
         trajectory:Trajectory = self._trajectories[n]
         return np.array([trajectory.sol[i][-1] for (i, variable_name) in enumerate(self._app.variable_names)])
     
-    def get_trajectory(self, n):
+    def get_trajectory(self, n:int):
         return self._trajectories[n]
 
     def setup_all(self):
@@ -64,7 +64,7 @@ class WorkbenchPhaseSpace(Workbench):
             window.setup_window()
         return
     
-    def integrate_trajectory(self, n):
+    def integrate_trajectory(self, n:int):
         trajectory = self._trajectories[n]
         trajectory_type = self._trajectory_types[n]
 
@@ -91,10 +91,10 @@ class WorkbenchPhaseSpace(Workbench):
                 return False
             
             # Get SoE current SoE coordinates from GUI
-            SoE_coordinates:np.ndarray = self._window_near_SoE.get_SoE_coordinates(n)
+            SoE_coordinates = self._window_near_SoE.get_SoE_coordinates(n)
 
             # Get ordinary number of eigenvalue from GUI
-            eigenvalue_N = dpg.get_value(f"near_SoE_table_eig_N_{n}")
+            eigenvalue_N:int = dpg.get_value(f"near_SoE_table_eig_N_{n}")
 
             # If incorrect eigenvalue_N input
             if (eigenvalue_N < 0) or (eigenvalue_N > len(self._app.variable_names)):
@@ -132,10 +132,10 @@ class WorkbenchPhaseSpace(Workbench):
 
         return True
     
-    def correct_SoE(self, n):
+    def correct_SoE(self, n:int):
         parameter_values:list[float] = self._window_parameters.get_parameters()
 
-        SoE_coordinates:np.ndarray = self._window_near_SoE.get_SoE_coordinates(n)
+        SoE_coordinates = self._window_near_SoE.get_SoE_coordinates(n)
         new_SoE_coordinates, success = solve(self._app.ODEs, SoE_coordinates, parameter_values)
 
         # If new SoE is not found, return unsuccessful status
@@ -207,11 +207,12 @@ class WorkbenchPhaseSpace(Workbench):
         return
     
     def handler_changed_plot_axis_label(self, data:dict):
-        m = data["m"] 
+        m:int = data["m"]
+        window = self._windows_plot[m]
         # x_axis_label = data["x_axis_label"] 
         # y_axis_label = data["y_axis_label"] 
-        x_axis_i = data["x_axis_i"] 
-        y_axis_i = data["y_axis_i"]
+        x_axis_i:int = data["x_axis_i"] 
+        y_axis_i:int = data["y_axis_i"]
 
         for (m, window) in self._windows_plot.items():
             for (n, trajectory) in self._trajectories.items():
@@ -237,14 +238,14 @@ class WorkbenchPhaseSpace(Workbench):
         return
     
     def handler_changed_dragpoint_position(self, data:dict):
-        m = data["m"] 
-        n = data["n"] 
-        x_axis_label = data["x_axis_label"]
-        y_axis_label = data["y_axis_label"]
-        x_axis_i = data["x_axis_i"]
-        y_axis_i = data["y_axis_i"]
-        x_dragpoint = data["x_dragpoint"]
-        y_dragpoint = data["y_dragpoint"]
+        m:int = data["m"] 
+        n:int = data["n"] 
+        # x_axis_label:str = data["x_axis_label"]
+        # y_axis_label:str = data["y_axis_label"]
+        x_axis_i:int = data["x_axis_i"]
+        y_axis_i:int = data["y_axis_i"]
+        x_dragpoint:float = data["x_dragpoint"]
+        y_dragpoint:float = data["y_dragpoint"]
 
         if (x_axis_i == len(self._app.variable_names)) and (y_axis_i == len(self._app.variable_names)):
             self._windows_plot[m].update_dragpoint(n, 0.0, 0.0)
@@ -264,8 +265,8 @@ class WorkbenchPhaseSpace(Workbench):
         return
     
     def handler_toggled_show(self, data:dict):
-        n = data["n"]
-        show = data["show"]
+        n:int = data["n"]
+        show:bool = data["show"]
         self._trajectory_show[n] = show
 
         if not self._trajectory_show[n]: return
@@ -286,8 +287,8 @@ class WorkbenchPhaseSpace(Workbench):
         return
     
     def handler_added_init_state(self, data:dict):
-        n_new = data["n"]
-        draginit = data["draginit"]
+        n_new:int = data["n"]
+        draginit:bool = data["draginit"]
 
         trajectory_new = Trajectory()
         self._trajectories[n_new] = trajectory_new
@@ -316,13 +317,12 @@ class WorkbenchPhaseSpace(Workbench):
         return
     
     def handler_corrected_SoE(self, data:dict):
-        n = data["n"]
+        n:int = data["n"]
 
         ns = [_n for (_n, trajectory) in self._trajectories.items()] if (n == -1) else [n,]
 
         for n in ns:
-            if self._trajectory_types[n] == 0:
-                continue
+            if (self._trajectory_types[n] == 0): continue
 
             success_correct = self.correct_SoE(n)
             if not success_correct: continue
@@ -337,7 +337,7 @@ class WorkbenchPhaseSpace(Workbench):
         return
     
     def handler_changed_toggled_autocorrect(self, data:dict):
-        n = data["n"]
+        n:int = data["n"]
         self._trajectory_autocorrect[n] = data["autocorrect"]
 
         if self._trajectory_autocorrect[n]:
