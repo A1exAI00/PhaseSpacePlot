@@ -55,6 +55,15 @@ class WorkbenchPhaseSpace(Workbench):
     
     def get_trajectory(self, n:int):
         return self._trajectories[n]
+    
+    def get_trajectories_keys(self):
+        return self._trajectories.keys()
+
+    def get_eigenvalue(self, n:int):
+        return self._SoE_eigenvalues[n]
+    
+    def get_eigenvector(self, n:int):
+        return self._SoE_eigenvectors[n]
 
     def setup_all(self):
         self._window_parameters.setup_window()
