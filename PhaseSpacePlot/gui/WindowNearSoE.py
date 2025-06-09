@@ -56,8 +56,8 @@ class WindowNearSoE:
         return
     
     def get_last_state(self, n):
-        trajectory = self._parent.get_trajectory(n)
-        return np.array([trajectory.sol[i][-1] for (i, variable_name) in enumerate(self._app.variable_names)])
+        last_state = self._parent.get_trajectory(n).get_last_state()
+        return last_state
     
     def setup_window(self):
         with dpg.window(label=self._window_label, tag="near_SoE_init_state_window", pos=(0, 300), height=400):

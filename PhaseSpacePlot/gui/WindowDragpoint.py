@@ -50,8 +50,8 @@ class WindowDragpoint:
         return np.array(dpg.get_values(variable_tags))
     
     def get_last_state(self, n):
-        trajectory = self._parent.get_trajectory(n)
-        return np.array([trajectory.sol[i][-1] for (i, variable_name) in enumerate(self._app.variable_names)])
+        last_state = self._parent.get_trajectory(n).get_last_state()
+        return last_state
     
     def set_variable(self, variable_name:str, n:int, value:float):
         dpg.set_value(self.get_variable_tag(variable_name, n), value)
