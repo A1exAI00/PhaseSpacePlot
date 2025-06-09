@@ -1,12 +1,13 @@
 import dearpygui.dearpygui as dpg
 
-from gui.PhaseSpaceWorkbench.PhaseSpaceWorkbench import PhaseSpaceWorkbench as psw
+from App import App
+from gui.WorkbenchPhaseSpace import WorkbenchPhaseSpace as psw
 
 #########################################################################################
 
 class MenuBar:
-    def __init__(self, app):
-        self.app = app
+    def __init__(self, app:App):
+        self._app:App = app
         return
 
     def setup(self):
@@ -22,13 +23,13 @@ class MenuBar:
                 dpg.add_menu_item(label="Manual", callback=self.callback_open_manual)
         return
     
-    def callback_create_DS(self, sender, app_data):
+    def callback_create_DS(self, sender:int, app_data:dict):
         return
     
-    def callback_open_DS(self, sender, app_data):
-        if self.app.active_workbench is not None:
-            self.app.active_workbench.delete_all()
-            self.app.active_workbench = None
+    def callback_open_DS(self, sender:int, app_data:dict):
+        if self._app.active_workbench is not None:
+            self._app.active_workbench.delete_all()
+            self._app.active_workbench = None
         
         with dpg.file_dialog(label="Choose folder with Dynamical System",
                             tag="DS_folder_dialog",
@@ -39,22 +40,22 @@ class MenuBar:
             pass
         return
     
-    def callback_process_DS_folder(self, sender, app_data):
+    def callback_process_DS_folder(self, sender:int, app_data:dict):
         # Get dynamical system folder
         folder_path = app_data["file_path_name"]
         
-        self.app.load_DS_info_exec(folder_path)
+        self._app.load_DS_info_exec(folder_path)
 
-        self.app.print_interesting()
+        self._app.print_interesting()
         return
     
-    def callback_open_phasespace_workbench(self, sender, app_data):
-        if self.app.active_workbench is not None:
-            self.app.active_workbench.delete_all()
-            self.app.active_workbench = None
+    def callback_open_phasespace_workbench(self, sender:int, app_data:dict):
+        if self._app.active_workbench is not None:
+            self._app.active_workbench.delete_all()
+            self._app.active_workbench = None
             
-        self.app.active_workbench = psw(self.app)
-        self.app.active_workbench.setup_all()
+        self._app.active_workbench = psw(self._app)
+        self._app.active_workbench.setup_all()
         return
     
     def callback_open_manual(self, sender, app_data):
