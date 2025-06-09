@@ -6,8 +6,8 @@ from gui.MenuBar import MenuBar
 #########################################################################################
 
 VIEWPORT_WINDOW_TITLE = "PhaseSpacePlot by Alex Akinin"
-VIEWPORT_WINDOW_WIDTH = 1500
-VIEWPORT_WINDOW_HEIGHT = 750
+VIEWPORT_WINDOW_WIDTH = 1700
+VIEWPORT_WINDOW_HEIGHT = 850
 
 app = App()
 menubar = MenuBar(app)
