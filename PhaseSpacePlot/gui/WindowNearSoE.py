@@ -210,7 +210,7 @@ class WindowNearSoE:
         return
     
     def callbcak_add_init_state(self, sender, app_data, user_data):
-        keys = self._parent._trajectories.keys()
+        keys = self._parent.get_trajectories_keys()
         n_new = 0 if (len(keys) == 0) else max(keys)+1
 
         self.add_row_to_table(n_new)
