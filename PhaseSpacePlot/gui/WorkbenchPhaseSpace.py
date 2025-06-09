@@ -214,27 +214,25 @@ class WorkbenchPhaseSpace(Workbench):
         x_axis_i:int = data["x_axis_i"] 
         y_axis_i:int = data["y_axis_i"]
 
-        for (m, window) in self._windows_plot.items():
-            for (n, trajectory) in self._trajectories.items():
+        for (n, trajectory) in self._trajectories.items():
+            if not self._trajectory_show[n]: return
 
-                if not self._trajectory_show[n]: return
+            # If X index corresponts to lamel of time "t"
+            if x_axis_i == len(self._app.variable_names):
+                x_data = trajectory.t_sol
+            else:
+                x_data = trajectory.sol[x_axis_i]
+            
+            # If Y index corresponts to lamel of time "t"
+            if y_axis_i == len(self._app.variable_names):
+                y_data = trajectory.t_sol
+            else:
+                y_data = trajectory.sol[y_axis_i]
 
-                # If X index corresponts to lamel of time "t"
-                if x_axis_i == len(self._app.variable_names):
-                    x_data = trajectory.t_sol
-                else:
-                    x_data = trajectory.sol[x_axis_i]
-                
-                # If Y index corresponts to lamel of time "t"
-                if y_axis_i == len(self._app.variable_names):
-                    y_data = trajectory.t_sol
-                else:
-                    y_data = trajectory.sol[y_axis_i]
-
-                # Update projection in the plot
-                if self._trajectory_types[n] == 0: 
-                    window.update_dragpoint(n, x_data[0], y_data[0])
-                window.update_lineseries(n, x_data, y_data)
+            # Update projection in the plot
+            if self._trajectory_types[n] == 0: 
+                window.update_dragpoint(n, x_data[0], y_data[0])
+            window.update_lineseries(n, x_data, y_data)
         return
     
     def handler_changed_dragpoint_position(self, data:dict):
