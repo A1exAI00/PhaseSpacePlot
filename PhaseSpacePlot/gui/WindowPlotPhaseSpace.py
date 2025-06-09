@@ -39,11 +39,13 @@ class WindowPlotPhaseSpace(WindowPlot):
     def handler_integrated_trajectory(self, data:dict):
         n = data["n"]
         trajectory:Trajectory = data["trajectory"]
+        sol = trajectory.get_sol()
+        t_sol = trajectory.get_t_sol()
         draginit = data["draginit"]
 
         x_axis_label, y_axis_label, x_axis_i, y_axis_i = self.get_axis_labels()
-        x_data = trajectory.t_sol if x_axis_i == len(self._app.variable_names) else trajectory.sol[x_axis_i]
-        y_data = trajectory.t_sol if y_axis_i == len(self._app.variable_names) else trajectory.sol[y_axis_i]
+        x_data = t_sol if (x_axis_i == len(self._app.variable_names)) else sol[x_axis_i]
+        y_data = t_sol if (y_axis_i == len(self._app.variable_names)) else sol[y_axis_i]
 
         if draginit: self.update_dragpoint(n, x_data[0], y_data[0])
         self.update_lineseries(n, x_data, y_data)

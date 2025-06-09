@@ -51,7 +51,8 @@ class WorkbenchPhaseSpace(Workbench):
     
     def get_last_state(self, n:int):
         trajectory:Trajectory = self._trajectories[n]
-        return np.array([trajectory.sol[i][-1] for (i, variable_name) in enumerate(self._app.variable_names)])
+        sol = trajectory.get_sol()
+        return np.array([sol[i][-1] for (i, variable_name) in enumerate(self._app.variable_names)])
     
     def get_trajectory(self, n:int):
         return self._trajectories[n]
@@ -226,17 +227,20 @@ class WorkbenchPhaseSpace(Workbench):
         for (n, trajectory) in self._trajectories.items():
             if not self._trajectory_show[n]: return
 
+            sol = trajectory.get_sol()
+            t_sol = trajectory.get_t_sol()
+
             # If X index corresponts to lamel of time "t"
             if x_axis_i == len(self._app.variable_names):
-                x_data = trajectory.t_sol
+                x_data = t_sol
             else:
-                x_data = trajectory.sol[x_axis_i]
+                x_data = sol[x_axis_i]
             
             # If Y index corresponts to lamel of time "t"
             if y_axis_i == len(self._app.variable_names):
-                y_data = trajectory.t_sol
+                y_data = t_sol
             else:
-                y_data = trajectory.sol[y_axis_i]
+                y_data = sol[y_axis_i]
 
             # Update projection in the plot
             if self._trajectory_types[n] == 0: 

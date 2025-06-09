@@ -310,14 +310,16 @@ class WindowNearSoE:
         # Which n trajectory has been clicked
         n = user_data["n"]
         trajectory = self._parent.get_trajectory(n)
+        sol = trajectory.get_sol()
+        t_sol = trajectory.get_t_sol()
 
         copy_type = user_data["type"]
         if copy_type == "python":
-            lines = [f"{variable_name} = {trajectory.sol[i].tolist()}" for (i,variable_name) in enumerate(self._app.variable_names)]
-            lines.append(f"t = {trajectory.t_sol.tolist()}")
+            lines = [f"{variable_name} = {sol[i].tolist()}" for (i,variable_name) in enumerate(self._app.variable_names)]
+            lines.append(f"t = {t_sol.tolist()}")
         elif copy_type == "numpy":
-            lines = [f"{variable_name} = np.array({trajectory.sol[i].tolist()})" for (i,variable_name) in enumerate(self._app.variable_names)]
-            lines.append(f"t = np.array({trajectory.t_sol.tolist()})")
+            lines = [f"{variable_name} = np.array({sol[i].tolist()})" for (i,variable_name) in enumerate(self._app.variable_names)]
+            lines.append(f"t = np.array({t_sol.tolist()})")
 
         result = "\n".join(lines)
         clip.copy(result)
